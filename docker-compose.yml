@@ -1,0 +1,69 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: github-agent-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - agent-network
+
+  nanobot-orchestrator:
+    build:
+      context: ./nanobot-orchestrator
+      dockerfile: Dockerfile
+    container_name: nanobot-orchestrator
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - OPCODE_API_URL=http://opencode-executor:8001
+      - WORKSPACE_DIR=/workspace
+    volumes:
+      - workspace_data:/workspace
+      - ./nanobot-orchestrator/src:/app/src:ro
+    depends_on:
+      - redis
+      - opencode-executor
+    networks:
+      - agent-network
+    command: ["python", "-m", "src.main"]
+
+  opencode-executor:
+    build:
+      context: ./opencode-executor
+      dockerfile: Dockerfile
+    container_name: opencode-executor
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - WORKSPACE_DIR=/workspace
+      - API_PORT=8001
+    volumes:
+      - workspace_data:/workspace
+      - ./opencode-executor/src:/app/src:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - redis
+    networks:
+      - agent-network
+    command: ["python", "-m", "src.main"]
+
+volumes:
+  workspace_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  agent-network:
+    driver: bridge

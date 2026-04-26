@@ -1,0 +1,35 @@
+{
+  "providers": {
+    "openrouter": {
+      "apiKey": "${LLM_API_KEY}"
+    }
+  },
+  "agents": {
+    "defaults": {
+      "provider": "openrouter",
+      "model": "anthropic/claude-opus-4"
+    }
+  },
+  "channels": {
+    "websocket": {
+      "enabled": false
+    }
+  },
+  "skills": {
+    "enabled": [
+      "shell",
+      "file",
+      "git"
+    ]
+  },
+  "memory": {
+    "enabled": true,
+    "max_tokens": 4000
+  },
+  "sandbox": {
+    "enabled": true,
+    "allowed_paths": [
+      "/workspace"
+    ]
+  }
+}
