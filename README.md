@@ -115,7 +115,7 @@ OPENCODE_LLM_MODEL=anthropic/claude-opus-4
 ## Configuración del Webhook en GitHub
 
 1. Ve a tu repositorio en GitHub → Settings → Webhooks → Add webhook
-2. **Payload URL**: `http://your-server:8000/webhook/github`
+2. **Payload URL**: `http://your-server:8080/webhook/github`
 3. **Content type**: `application/json`
 4. **Secret**: El mismo valor que `GITHUB_WEBHOOK_SECRET`
 5. **Events**: Selecciona "Issues" y "Issue comments"
@@ -144,11 +144,11 @@ docker-compose logs -f opencode-executor
 ### Probar manualmente
 ```bash
 # Health checks
-curl http://localhost:8000/health
+curl http://localhost:8080/health
 curl http://localhost:8001/health
 
 # Simular un webhook (para pruebas)
-curl -X POST http://localhost:8000/webhook/github \
+curl -X POST http://localhost:8080/webhook/github \
   -H "Content-Type: application/json" \
   -H "X-GitHub-Event: issues" \
   -d '{

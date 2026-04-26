@@ -29,7 +29,7 @@ class Settings:
     OPCODE_API_URL: str = os.getenv("OPCODE_API_URL", "http://opencode-executor:8001")
     
     # Webhook Server
-    WEBHOOK_PORT: int = int(os.getenv("WEBHOOK_PORT", "8000"))
+    WEBHOOK_PORT: int = int(os.getenv("WEBHOOK_PORT", "8080"))
     WEBHOOK_HOST: str = os.getenv("WEBHOOK_HOST", "0.0.0.0")
     
     # Redis

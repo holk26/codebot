@@ -17,16 +17,18 @@ services:
     container_name: nanobot-orchestrator
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8080:8080"
     env_file:
       - .env
     environment:
       - REDIS_URL=redis://redis:6379/0
       - OPCODE_API_URL=http://opencode-executor:8001
       - WORKSPACE_DIR=/workspace
+      - WEBHOOK_PORT=8080
     volumes:
       - workspace_data:/workspace
       - ./nanobot-orchestrator/src:/app/src:ro
+      - ./nanobot-orchestrator/config:/app/config:ro
     depends_on:
       - redis
       - opencode-executor

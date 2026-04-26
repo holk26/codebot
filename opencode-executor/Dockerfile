@@ -1,8 +1,11 @@
 FROM python:3.11-slim
 
+# Create non-root user for security
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser
+
 WORKDIR /app
 
-# Install system dependencies including Node.js for any JS tooling
+# Install system dependencies including Node.js for any JS tooling and upgrade pip
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
@@ -11,16 +14,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     npm \
     ripgrep \
     fd-find \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir --upgrade pip
 
-# Install Python dependencies
-RUN pip install --no-cache-dir fastapi uvicorn httpx redis pydantic python-dotenv pygithub openai anthropic
+# Install Python dependencies as root first (for caching layer)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Create directories
-RUN mkdir -p /app/src /workspace
+# Create directories and set permissions
+RUN mkdir -p /app/src /workspace \
+    && chown -R appuser:appgroup /app /workspace
 
 # Copy source code
-COPY src/ /app/src/
+COPY --chown=appuser:appgroup src/ /app/src/
+
+# Switch to non-root user
+USER appuser
 
 # Set Python path
 ENV PYTHONPATH=/app
