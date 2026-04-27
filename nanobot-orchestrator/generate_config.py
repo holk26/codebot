@@ -82,15 +82,18 @@ def main():
         "channels": {
             "telegram": {
                 "enabled": bool(telegram_token),
-                "token": telegram_token
+                "token": telegram_token,
+                "allowFrom": ["*"]
             },
             "discord": {
                 "enabled": bool(discord_token),
-                "token": discord_token
+                "token": discord_token,
+                "allowFrom": ["*"]
             },
             "slack": {
                 "enabled": bool(slack_token),
-                "token": slack_token
+                "token": slack_token,
+                "allowFrom": ["*"]
             },
             "websocket": {
                 "enabled": True,
