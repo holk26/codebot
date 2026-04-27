@@ -6,12 +6,10 @@
 # ============================================
 
 ARG APP_USER=appuser
-ARG APP_UID=1000
 
 FROM node:22-slim
 
 ARG APP_USER
-ARG APP_UID
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -22,9 +20,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fd-find \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user
-RUN groupadd -r ${APP_USER} --gid=${APP_UID} && \
-    useradd -r -g ${APP_USER} --uid=${APP_UID} ${APP_USER}
+# Create non-root user (auto-assign GID/UID to avoid conflicts)
+RUN groupadd -r ${APP_USER} && \
+    useradd -r -g ${APP_USER} ${APP_USER}
 
 # Install opencode-ai globally
 RUN npm install -g opencode-ai@latest

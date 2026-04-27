@@ -4,7 +4,6 @@
 # ============================================
 
 ARG APP_USER=appuser
-ARG APP_UID=1000
 
 # --- Build stage ---
 FROM python:3.11-slim AS builder
@@ -34,7 +33,6 @@ RUN pip install --no-cache-dir --upgrade pip && \
 FROM python:3.11-slim
 
 ARG APP_USER
-ARG APP_UID
 
 # Install runtime dependencies (including gettext for envsubst)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -44,9 +42,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gettext-base \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user
-RUN groupadd -r ${APP_USER} --gid=${APP_UID} && \
-    useradd -r -g ${APP_USER} --uid=${APP_UID} ${APP_USER}
+# Create non-root user (auto-assign GID/UID to avoid conflicts)
+RUN groupadd -r ${APP_USER} && \
+    useradd -r -g ${APP_USER} ${APP_USER}
 
 # Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
