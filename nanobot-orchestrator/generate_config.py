@@ -63,7 +63,6 @@ def main():
     
     telegram_token = get_env("TELEGRAM_BOT_TOKEN")
     telegram_allowed = get_env("TELEGRAM_ALLOWED_USER_IDS", "*")
-    # Parse comma-separated user IDs, or ["*"] for all
     if telegram_allowed and telegram_allowed != "*":
         telegram_allow_from = [uid.strip() for uid in telegram_allowed.split(",") if uid.strip()]
     else:
@@ -75,7 +74,6 @@ def main():
     gateway_port = int(get_env("NANOBOT_GATEWAY_PORT", "8081"))
     
     # Minimal config that nanobot-ai accepts
-    # Reference: https://github.com/HKUDS/nanobot/blob/main/nanobot/config/loader.py
     config = {
         "providers": providers,
         "agents": {
@@ -106,6 +104,12 @@ def main():
                 "enabled": True,
                 "port": gateway_port
             }
+        },
+        "tools": {
+            "exec": {
+                "allowedEnvKeys": ["INTERNAL_API_KEY", "GITHUB_TOKEN", "MOONSHOT_API_KEY", "OPENROUTER_API_KEY"]
+            },
+            "ssrfWhitelist": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
         }
     }
     

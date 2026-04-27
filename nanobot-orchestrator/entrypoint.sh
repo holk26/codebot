@@ -1,9 +1,10 @@
 #!/bin/sh
 # ============================================
 # Nanobot Orchestrator Entrypoint
-# 1. Generates nanobot config via Python (robust, handles missing env vars)
-# 2. Starts nanobot gateway (native WebSocket server)
-# 3. Starts our webhook server (FastAPI) for GitHub webhooks
+# 1. Generates nanobot config via Python
+# 2. Copies custom skills to workspace
+# 3. Starts nanobot gateway (native WebSocket server)
+# 4. Starts webhook server (FastAPI)
 # ============================================
 
 set -e
@@ -14,9 +15,17 @@ echo "[entrypoint] Config dir=${HOME}/.nanobot"
 # Create directories
 mkdir -p "${HOME}/.nanobot/data" "${HOME}/.nanobot/logs" "${HOME}/.nanobot/skills"
 
-# Generate nanobot config using Python (more robust than envsubst)
-echo "[entrypoint] Generating nanobot config..."
+# Generate nanobot config using Python
 python3 /app/generate_config.py
+
+# Copy custom skills to nanobot workspace
+if [ -d "/app/skills" ]; then
+    echo "[entrypoint] Copying custom skills..."
+    cp -r /app/skills/* "${HOME}/.nanobot/skills/" 2>/dev/null || true
+    echo "[entrypoint] Skills copied to ${HOME}/.nanobot/skills/"
+else
+    echo "[entrypoint] No custom skills found at /app/skills"
+fi
 
 # Validate required secrets
 if [ -z "${INTERNAL_API_KEY}" ]; then
@@ -41,8 +50,7 @@ fi
 
 echo "[entrypoint] Config generated successfully."
 
-# Start nanobot gateway in background (native WebSocket server)
-# Use default nanobot port (18790) or override with NANOBOT_GATEWAY_PORT
+# Start nanobot gateway in background
 echo "[entrypoint] Starting nanobot gateway..."
 if [ -n "${NANOBOT_GATEWAY_PORT}" ]; then
     nanobot gateway --port "${NANOBOT_GATEWAY_PORT}" &
@@ -52,17 +60,12 @@ fi
 NANOBOT_GATEWAY_PID=$!
 echo "[entrypoint] Nanobot gateway started with PID ${NANOBOT_GATEWAY_PID}"
 
-# Give nanobot gateway a moment to start
 sleep 3
 
-# Verify gateway is running
 if ! kill -0 "${NANOBOT_GATEWAY_PID}" 2>/dev/null; then
     echo "[entrypoint] ERROR: Nanobot gateway failed to start!"
     exit 1
 fi
 
 echo "[entrypoint] Starting Nanobot Orchestrator webhook server (port 8080)..."
-
-# Start the FastAPI webhook server in foreground
-# When this exits, the container stops
 exec python -m src.main

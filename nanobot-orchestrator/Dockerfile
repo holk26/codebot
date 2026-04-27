@@ -66,6 +66,7 @@ RUN mkdir -p /app/src /app/config /app/data /app/logs /app/skills /workspace /tm
 COPY --chown=${APP_USER}:${APP_USER} nanobot-orchestrator/src/ /app/src/
 COPY --chown=${APP_USER}:${APP_USER} shared/ /app/shared/
 COPY --chown=${APP_USER}:${APP_USER} nanobot-orchestrator/generate_config.py /app/generate_config.py
+COPY --chown=${APP_USER}:${APP_USER} nanobot-orchestrator/skills/ /app/skills/
 
 # Copy entrypoint
 COPY --chown=${APP_USER}:${APP_USER} nanobot-orchestrator/entrypoint.sh /app/entrypoint.sh
