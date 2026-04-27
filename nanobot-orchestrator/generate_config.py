@@ -62,6 +62,13 @@ def main():
     model = get_env("NANOBOT_LLM_MODEL", "kimi-k2.6")
     
     telegram_token = get_env("TELEGRAM_BOT_TOKEN")
+    telegram_allowed = get_env("TELEGRAM_ALLOWED_USER_IDS", "*")
+    # Parse comma-separated user IDs, or ["*"] for all
+    if telegram_allowed and telegram_allowed != "*":
+        telegram_allow_from = [uid.strip() for uid in telegram_allowed.split(",") if uid.strip()]
+    else:
+        telegram_allow_from = ["*"]
+    
     discord_token = get_env("DISCORD_BOT_TOKEN")
     slack_token = get_env("SLACK_BOT_TOKEN")
     
@@ -83,7 +90,7 @@ def main():
             "telegram": {
                 "enabled": bool(telegram_token),
                 "token": telegram_token,
-                "allowFrom": ["*"]
+                "allowFrom": telegram_allow_from
             },
             "discord": {
                 "enabled": bool(discord_token),

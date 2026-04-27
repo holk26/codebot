@@ -94,6 +94,9 @@ OPENCODE_WEB_PASSWORD=${OPENCODE_WEB_PASSWORD}
 # TELEGRAM INTEGRATION
 # ============================================
 TELEGRAM_BOT_TOKEN=
+# Comma-separated Telegram user IDs allowed to interact with the bot.
+# Use "*" (or leave empty) to allow everyone.
+TELEGRAM_ALLOWED_USER_IDS=*
 
 # ============================================
 # OPTIONAL: DISCORD / SLACK
