@@ -1,4 +1,4 @@
-"""Configuration for OpenCode executor."""
+"""Configuration for OpenCode executor (Hardened)."""
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -21,6 +21,9 @@ class Settings:
     API_PORT: int = int(os.getenv("OPENCODE_API_PORT", "8001"))
     API_HOST: str = os.getenv("OPENCODE_API_HOST", "0.0.0.0")
     
+    # Internal Service Auth
+    INTERNAL_API_KEY: str = os.getenv("INTERNAL_API_KEY", "")
+    
     # GitHub
     GITHUB_TOKEN: str = os.getenv("GITHUB_TOKEN", "")
     
@@ -29,6 +32,7 @@ class Settings:
     
     # Redis
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://redis:6379/0")
+    REDIS_PASSWORD: str = os.getenv("REDIS_PASSWORD", "")
     
     # Limits
     MAX_TOOL_CALLS: int = int(os.getenv("MAX_TOOL_CALLS", "50"))

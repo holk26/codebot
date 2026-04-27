@@ -2,231 +2,218 @@
 
 Sistema de agentes de IA que utiliza **Nanobot** como orquestador y **OpenCode** como ejecutor para reaccionar automáticamente a los issues de GitHub, analizarlos, generar código y crear Pull Requests.
 
-## Arquitectura
+> **SECURITY FIRST**: Esta arquitectura está diseñada para exposición segura a internet vía [Dokploy](https://dokploy.com). Incluye autenticación entre servicios, segmentación de red, rate limiting, hardening de contenedores y validación HMAC de webhooks. Ver [SECURITY.md](SECURITY.md) para detalles completos.
+
+## Arquitectura Segura (Dokploy)
 
 ```
-GitHub Webhook
-      |
-      v
-+-------------------+     HTTP API      +-------------------+
-|  Nanobot          | --------------->  |  OpenCode         |
-|  Orchestrator     |                   |  Executor         |
-|  (Python/FastAPI) |                   |  (Python/FastAPI) |
-+-------------------+                   +-------------------+
-        |                                       |
-        | GitHub API                            | Git + GitHub API
-        v                                       v
-   +---------+                            +----------+
-   | GitHub  |                            |  Repo    |
-   | Issues  |                            |  Code    |
-   +---------+                            +----------+
+Internet
+    |
+    | HTTPS (TLS 1.3 via Dokploy/Traefik)
+    v
++------------------------+     +------------------------+
+| Dokploy Reverse Proxy  |     | OpenCode Executor      |
+| (maneja SSL/domain)    |     | - NO expuesto público  |
+|                        |     | - API Key required     |
++-----------+------------+     | - Red interna únicam.  |
+            |                  +------------------------+
+            | HTTP                        ^
+            v                             | API Key
++------------------------+                | (red interna)
+| Nanobot Orchestrator   |----------------+
+| - Webhook validation   |
+| - LLM analysis         |
+| - Audit logging        |
++-----------+------------+
+            |
+            | API GitHub
+            v
+      +-----------+
+      |  GitHub   |
+      |  Issues   |
+      +-----------+
 ```
 
 ### Flujo de Trabajo
 
-1. **GitHub Webhook** → Envía eventos de issues a Nanobot Orchestrator
-2. **Nanobot** → Analiza el issue con LLM, determina si requiere cambios de código
-3. **Nanobot** → Si se requieren cambios, delega la ejecución a OpenCode Executor vía API HTTP
-4. **OpenCode** → Clona el repo, analiza el código, aplica cambios usando herramientas (bash/read/write/edit)
-5. **OpenCode** → Commitea, pushea a una nueva branch y crea un Pull Request
-6. **Nanobot** → Comenta en el issue con el resultado y link al PR
+1. **GitHub Webhook** → Envía eventos de issues a través de Dokploy (SSL automático)
+2. **Nanobot** → Valida firma HMAC, analiza el issue con LLM
+3. **Nanobot** → Si requiere código, delega a OpenCode con API key
+4. **OpenCode** → Clona repo, planea cambios, modifica código, crea PR
+5. **Nanobot** → Reporta resultado en el issue con link al PR
+
+## Requisitos
+
+- [Dokploy](https://dokploy.com) instalado en tu servidor (o Docker local para desarrollo)
+- Token de GitHub PAT con scopes: `repo`, `write:discussion`
+- API Key de LLM (OpenRouter recomendado)
+- OpenSSL (para generación de secrets)
+
+## Instalación Rápida (Dokploy)
+
+### Paso 1: Setup Local
+```bash
+# 1. Clonar
+git clone <repo-url>
+cd github-ai-agent
+
+# 2. Setup seguro (genera secrets criptográficamente fuertes)
+./setup.sh
+
+# 3. Editar configuración
+nano .env
+# - GITHUB_TOKEN=ghp_...
+# - GITHUB_REPO=owner/repo
+# - LLM_API_KEY=sk-or-v1-...
+```
+
+### Paso 2: Desplegar en Dokploy
+
+1. **Sube el código a Git** (GitHub, GitLab, etc.)
+2. En **Dokploy Dashboard** → Create Service → Compose
+3. Selecciona tu repositorio
+4. En la pestaña **Environment**, copia todas las variables de tu `.env`
+5. En la pestaña **Domains**, selecciona el servicio `nanobot-orchestrator` y añade tu dominio
+6. **Deploy**
+
+Dokploy automáticamente:
+- Construye las imágenes Docker
+- Obtiene certificado SSL vía Let's Encrypt
+- Enruta tu dominio al servicio
+- Expone solo el puerto necesario
+
+### Paso 3: Configurar GitHub Webhook
+
+1. Repositorio → Settings → Webhooks → Add webhook
+2. **Payload URL**: `https://TU_DOMINIO/webhook/github`
+3. **Content type**: `application/json`
+4. **Secret**: El valor de `GITHUB_WEBHOOK_SECRET` de tu `.env`
+5. **Events**: Issues, Issue comments
+6. Activar ✅
+
+> **Importante**: El webhook debe usar HTTPS. Dokploy maneja el SSL automáticamente.
 
 ## Estructura del Proyecto
 
 ```
 .
-├── docker-compose.yml              # Orquestación de contenedores
+├── docker-compose.yml              # Orquestación con 2 redes (Dokploy optimized)
 ├── .env.example                    # Template de variables de entorno
-├── setup.sh                        # Script de instalación
-├── start.sh                        # Script de inicio
-├── stop.sh                         # Script de detención
+├── .gitignore                      # Excluye secrets
+├── SECURITY.md                     # Guía completa de seguridad
+├── setup.sh                        # Setup seguro con generación de secrets
+├── start.sh                        # Inicio local con validaciones
+├── stop.sh                         # Detención local
+├── shared/                         # Módulos de seguridad compartidos
+│   ├── security.py                # Auth, rate limiting, HMAC verification
+│   └── middleware.py              # FastAPI security headers + audit log
 ├── nanobot-orchestrator/           # Servicio orquestador
-│   ├── Dockerfile
+│   ├── Dockerfile                  # Multi-stage, non-root, read-only
 │   ├── requirements.txt
 │   ├── config/
-│   │   └── nanobot.json           # Configuración de nanobot
+│   │   └── nanobot.json
 │   └── src/
-│       ├── main.py                # Entry point FastAPI
+│       ├── main.py                # FastAPI con middleware de seguridad
 │       ├── config.py              # Configuración
-│       ├── webhook_server.py      # Receptor de webhooks GitHub
+│       ├── webhook_server.py      # Webhook validado + rate limiting
 │       ├── github_client.py       # Cliente GitHub API
 │       ├── issue_analyzer.py      # Análisis de issues con LLM
-│       ├── opencode_client.py     # Cliente para OpenCode executor
+│       ├── opencode_client.py     # Cliente autenticado a OpenCode
 │       ├── task_queue.py          # Cola de tareas Redis
 │       └── worker.py              # Worker de procesamiento
-└── opencode-executor/             # Servicio ejecutor
-    ├── Dockerfile
+└── opencode-executor/             # Servicio ejecutor (NO expuesto)
+    ├── Dockerfile                  # Multi-stage, non-root, read-only
     ├── requirements.txt
     └── src/
-        ├── main.py                # Entry point FastAPI
+        ├── main.py                # FastAPI con validación de API key
         ├── config.py              # Configuración
-        ├── api.py                 # API routes
+        ├── api.py                 # API routes (require API key)
         ├── executor.py            # Motor de ejecución
-        ├── tools.py               # Herramientas (bash, read, write, edit)
+        ├── tools.py               # Herramientas sandboxeadas
         ├── git_utils.py           # Utilidades Git
         └── llm_client.py          # Cliente LLM
 ```
 
-## Requisitos
+## Redes y Seguridad
 
-- Docker 24.0+
-- docker-compose 2.20+
-- Token de GitHub Personal Access Token con permisos: `repo`, `issues`, `pull_requests`
-- API Key de LLM (OpenRouter recomendado, o OpenAI/Anthropic)
+| Red | Exposición | Servicios |
+|-----|-----------|-----------|
+| `public` | Internet vía Dokploy | Nanobot webhook |
+| `internal` | NO (sin salida a internet) | Nanobot ↔ OpenCode ↔ Redis |
 
-## Instalación Rápida
+**OpenCode Executor nunca es accesible desde internet.** Solo Nanobot puede comunicarse con él a través de la red interna, y cada request requiere `X-Internal-API-Key`.
+
+## Medidas de Seguridad Implementadas
+
+- ✅ **SSL/TLS automático** vía Dokploy (Let's Encrypt)
+- ✅ **HMAC-SHA256** en todos los webhooks (obligatorio, no bypass)
+- ✅ **Rate limiting** (30 req/min por IP a nivel aplicación)
+- ✅ **Network segmentation** (2 redes Docker aisladas)
+- ✅ **Service-to-service auth** (API key compartida con `secrets.compare_digest`)
+- ✅ **Non-root containers** con capabilities mínimas
+- ✅ **Read-only root filesystem** + tmpfs
+- ✅ **Security headers** (HSTS, CSP, X-Frame-Options, etc.)
+- ✅ **Audit logging** de todas las requests
+- ✅ **Multi-stage Docker builds**
+- ✅ **No secrets en imágenes Docker**
+- ✅ **Redis con password** y protected mode
+- ✅ **FastAPI docs disabled** en producción
+
+Para más detalles, ver [SECURITY.md](SECURITY.md).
+
+## Desarrollo Local
 
 ```bash
-# 1. Clonar el repositorio
-git clone <repo-url>
-cd github-ai-agent
-
-# 2. Ejecutar setup
-./setup.sh
-
-# 3. Editar configuración
-nano .env
-
-# 4. Iniciar servicios
+# Iniciar localmente (sin Dokploy)
 ./start.sh
+
+# Logs
+docker compose logs -f nanobot-orchestrator
+docker compose logs -f opencode-executor
+
+# Estado
+docker compose ps
+
+# Restart de un servicio
+docker compose restart nanobot-orchestrator
+
+# Shell en contenedor (debug)
+docker compose exec nanobot-orchestrator sh
 ```
 
-## Configuración
-
-Copia `.env.example` a `.env` y configura:
+## Testing
 
 ```bash
-# GitHub
-GITHUB_TOKEN=ghp_your_token_here
-GITHUB_WEBHOOK_SECRET=your_webhook_secret
-GITHUB_REPO=owner/repository
+# Simular webhook (requiere secret correcto)
+SECRET="tu_webhook_secret"
+PAYLOAD='{"action":"opened","issue":{"number":1,"title":"Test","body":"Test body"},"repository":{"full_name":"owner/repo"}}'
+SIGNATURE="sha256=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$SECRET" | sed 's/^.* //')"
 
-# LLM (OpenRouter recomendado)
-LLM_PROVIDER=openrouter
-LLM_API_KEY=sk-or-v1-your_key
-LLM_MODEL=anthropic/claude-opus-4
-
-# OpenCode puede usar mismo o diferente modelo
-OPENCODE_LLM_PROVIDER=openrouter
-OPENCODE_LLM_API_KEY=sk-or-v1-your_key
-OPENCODE_LLM_MODEL=anthropic/claude-opus-4
-```
-
-## Configuración del Webhook en GitHub
-
-1. Ve a tu repositorio en GitHub → Settings → Webhooks → Add webhook
-2. **Payload URL**: `http://your-server:8080/webhook/github`
-3. **Content type**: `application/json`
-4. **Secret**: El mismo valor que `GITHUB_WEBHOOK_SECRET`
-5. **Events**: Selecciona "Issues" y "Issue comments"
-6. Activa el webhook
-
-> **Nota**: Para desarrollo local, puedes usar [ngrok](https://ngrok.com/) o [smee.io](https://smee.io/) para exponer tu localhost.
-
-## Uso
-
-### Iniciar servicios
-```bash
-docker-compose up -d
-```
-
-### Ver logs
-```bash
-docker-compose logs -f nanobot-orchestrator
-docker-compose logs -f opencode-executor
-```
-
-### Detener servicios
-```bash
-./stop.sh
-```
-
-### Probar manualmente
-```bash
-# Health checks
-curl http://localhost:8080/health
-curl http://localhost:8001/health
-
-# Simular un webhook (para pruebas)
-curl -X POST http://localhost:8080/webhook/github \
+curl -X POST https://TU_DOMINIO/webhook/github \
   -H "Content-Type: application/json" \
   -H "X-GitHub-Event: issues" \
-  -d '{
-    "action": "opened",
-    "issue": {"number": 1, "title": "Test", "body": "Test body"},
-    "repository": {"full_name": "owner/repo"}
-  }'
-```
-
-## Cómo Funciona
-
-### 1. Análisis del Issue (Nanobot)
-Cuando llega un webhook de un issue nuevo, Nanobot:
-- Verifica la firma del webhook
-- Consulta el issue completo vía GitHub API
-- Usa un LLM para analizar el tipo de issue (bug, feature, docs, etc.)
-- Decide si requiere cambios de código
-- Si NO requiere código: solo etiqueta el issue
-- Si requiere código: delega a OpenCode
-
-### 2. Ejecución de Código (OpenCode)
-OpenCode Executor recibe la tarea y:
-- Clona/actualiza el repositorio en `/workspace`
-- Genera un plan de cambios usando LLM
-- Lee archivos relevantes del proyecto
-- Genera/modifica código usando herramientas seguras
-- Ejecuta comandos de verificación (tests, lint, etc.)
-- Crea una branch, commitea y pushea
-- Crea un Pull Request vía GitHub API
-
-### 3. Seguridad
-- Los comandos bash están sandboxeados al directorio `/workspace`
-- Se bloquean comandos peligrosos (`rm -rf /`, etc.)
-- Se limita el número de llamadas a herramientas (default: 50)
-- Timeout de ejecución (default: 10 minutos)
-
-## Personalización
-
-### Ajustar análisis de issues
-Edita `nanobot-orchestrator/src/issue_analyzer.py`:
-- Modifica el prompt del sistema para cambiar criterios de análisis
-- Ajusta labels sugeridas
-- Modifica reglas de auto-cierre
-
-### Añadir nuevas herramientas
-Edita `opencode-executor/src/tools.py`:
-- Implementa nuevas funciones en `ToolManager`
-- Registra las herramientas en `executor.py`
-
-### Cambiar modelo LLM
-Edita `.env`:
-```bash
-LLM_MODEL=openai/gpt-4o
-OPENCODE_LLM_MODEL=anthropic/claude-3-5-sonnet
+  -H "X-Hub-Signature-256: $SIGNATURE" \
+  -d "$PAYLOAD"
 ```
 
 ## Troubleshooting
 
-### Los servicios no inician
-```bash
-docker-compose build --no-cache
-docker-compose up
-```
+### Webhook "Invalid signature"
+- Asegúrate que `GITHUB_WEBHOOK_SECRET` en `.env` coincide con el configurado en GitHub
+- No hay espacios ni saltos de línea extra
 
-### El webhook no llega
-- Verifica que el servidor sea accesible desde internet
-- Comprueba el secret del webhook
-- Revisa logs: `docker-compose logs nanobot-orchestrator`
+### "Internal API key not configured"
+- Ejecuta `./setup.sh` para generar secrets
+- Verifica que las variables de entorno están configuradas en Dokploy
 
-### OpenCode no puede crear PRs
-- Verifica que `GITHUB_TOKEN` tenga permisos `repo` y `pull_requests`
-- Comprueba que el token no haya expirado
-- Revisa logs: `docker-compose logs opencode-executor`
+### OpenCode no responde
+- Es normal que no responda desde internet - está en red interna
+- Verifica logs: `docker compose logs opencode-executor`
 
-### Errores de LLM
-- Verifica que la API key sea válida
-- Comprueba que el modelo esté disponible en tu proveedor
-- Revisa los límites de rate limit
+### Dokploy no despliega
+- Verifica que `docker-compose.yml` está en la raíz del repo
+- Asegúrate que el Dockerfile de cada servicio es accesible desde el contexto de build
+- Revisa los build logs en Dokploy UI
 
 ## Contribuir
 

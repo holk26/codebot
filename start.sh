@@ -1,32 +1,61 @@
 #!/bin/bash
-# Start script with health checks
+# Start script for local development/testing
+# For Dokploy, use the Dokploy UI to deploy
 
-set -e
+set -euo pipefail
+
+COMPOSE_CMD=$(docker compose version &> /dev/null && echo "docker compose" || echo "docker-compose")
 
 echo "Starting GitHub AI Agent services..."
 
-# Start services
-docker-compose up -d
-
-# Wait for services to be ready
-echo "Waiting for services to be ready..."
-sleep 5
-
-# Check nanobot health
-echo "Checking nanobot orchestrator..."
-if curl -s http://localhost:8080/health > /dev/null; then
-    echo "  Nanobot Orchestrator: OK (http://localhost:8080)"
-else
-    echo "  Nanobot Orchestrator: NOT READY"
+# Validate .env exists
+if [ ! -f .env ]; then
+    echo "ERROR: .env file not found. Run ./setup.sh first."
+    exit 1
 fi
 
-# Check opencode health
+# Check for placeholder values
+if grep -q "REPLACE_ME" .env; then
+    echo "WARNING: .env still contains placeholder values. Please edit it first."
+    exit 1
+fi
+
+# Check for weak secrets
+if grep -q "INTERNAL_API_KEY=change_me" .env 2>/dev/null || grep -q "REDIS_PASSWORD=change_me" .env 2>/dev/null; then
+    echo "ERROR: Default secrets detected. Run ./setup.sh to regenerate secure secrets."
+    exit 1
+fi
+
+# Start services
+$COMPOSE_CMD up -d
+
+# Wait for services
+echo ""
+echo "Waiting for services to be ready..."
+sleep 8
+
+# Check nanobot
+echo "Checking nanobot orchestrator..."
+if curl -sk http://localhost:8080/health &> /dev/null; then
+    echo "  Nanobot Orchestrator: OK (http://localhost:8080)"
+else
+    echo "  Nanobot Orchestrator: NOT READY (may need more time)"
+fi
+
+# Check opencode
 echo "Checking opencode executor..."
-if curl -s http://localhost:8001/health > /dev/null; then
+if curl -sk http://localhost:8001/health &> /dev/null; then
     echo "  OpenCode Executor: OK (http://localhost:8001)"
 else
-    echo "  OpenCode Executor: NOT READY"
+    echo "  OpenCode Executor: NOT READY (may need more time)"
 fi
 
 echo ""
-echo "Services started. Logs: docker-compose logs -f"
+echo "Services started."
+echo ""
+echo "Useful commands:"
+echo "  Logs:          $COMPOSE_CMD logs -f"
+echo "  Stop:          ./stop.sh"
+echo "  Restart:       $COMPOSE_CMD restart"
+echo "  Status:        $COMPOSE_CMD ps"
+echo ""

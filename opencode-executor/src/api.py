@@ -1,12 +1,13 @@
-"""API routes for OpenCode executor."""
+"""API routes for OpenCode executor (Hardened)."""
 import logging
 from typing import Dict, Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel
 
 from src.executor import TaskExecutor
 from src.config import settings
+from shared.security import require_internal_api_key, rate_limiter, rate_limit_key
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -46,8 +47,8 @@ async def get_status():
 
 
 @router.post("/execute", response_model=ExecuteResponse)
-async def execute_task(request: ExecuteRequest):
-    """Execute a code task delegated by Nanobot."""
+async def execute_task(request: ExecuteRequest, _=Depends(require_internal_api_key)):
+    """Execute a code task delegated by Nanobot. Requires internal API key."""
     logger.info(f"Received execution request for issue #{request.issue_number}")
     
     try:

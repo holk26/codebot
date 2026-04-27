@@ -1,49 +1,38 @@
-"""GitHub webhook receiver and validator."""
-import hashlib
-import hmac
+"""GitHub webhook receiver and validator (Hardened)."""
 import json
 import logging
 
-from fastapi import APIRouter, Request, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Request, HTTPException, BackgroundTasks, status
 from fastapi.responses import JSONResponse
 
 from src.config import settings
 from src.github_client import GitHubClient
 from src.issue_analyzer import IssueAnalyzer
 from src.opencode_client import OpenCodeClient
+from shared.security import verify_github_signature, rate_limiter, rate_limit_key
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-def verify_signature(payload: bytes, signature: str, secret: str) -> bool:
-    """Verify GitHub webhook signature."""
-    if not secret:
-        logger.warning("No webhook secret configured, skipping verification")
-        return True
-    
-    if not signature:
-        return False
-    
-    expected = "sha256=" + hmac.new(
-        secret.encode(),
-        payload,
-        hashlib.sha256
-    ).hexdigest()
-    
-    return hmac.compare_digest(expected, signature)
-
-
 @router.post("/github")
 async def github_webhook(request: Request, background_tasks: BackgroundTasks):
     """Receive GitHub webhook events."""
+    
+    # Rate limiting per IP
+    client_key = rate_limit_key(request)
+    if not rate_limiter.is_allowed(f"webhook:{client_key}"):
+        logger.warning(f"Rate limit exceeded for {client_key}")
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Rate limit exceeded")
+    
     payload = await request.body()
     signature = request.headers.get("X-Hub-Signature-256", "")
     event_type = request.headers.get("X-GitHub-Event", "")
     
-    # Verify signature
-    if not verify_signature(payload, signature, settings.GITHUB_WEBHOOK_SECRET):
-        raise HTTPException(status_code=401, detail="Invalid signature")
+    # Verify signature - MANDATORY
+    if not verify_github_signature(payload, signature, settings.GITHUB_WEBHOOK_SECRET):
+        logger.warning(f"Invalid webhook signature from {client_key}")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid signature")
     
     data = json.loads(payload)
     

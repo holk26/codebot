@@ -1,4 +1,4 @@
-"""Configuration settings for nanobot orchestrator."""
+"""Configuration settings for nanobot orchestrator (Hardened)."""
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -28,12 +28,16 @@ class Settings:
     # OpenCode Executor
     OPCODE_API_URL: str = os.getenv("OPCODE_API_URL", "http://opencode-executor:8001")
     
+    # Internal Service Auth
+    INTERNAL_API_KEY: str = os.getenv("INTERNAL_API_KEY", "")
+    
     # Webhook Server
     WEBHOOK_PORT: int = int(os.getenv("WEBHOOK_PORT", "8080"))
     WEBHOOK_HOST: str = os.getenv("WEBHOOK_HOST", "0.0.0.0")
     
     # Redis
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://redis:6379/0")
+    REDIS_PASSWORD: str = os.getenv("REDIS_PASSWORD", "")
     
     # Workspace
     WORKSPACE_DIR: str = os.getenv("WORKSPACE_DIR", "/workspace")

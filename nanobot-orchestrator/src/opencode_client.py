@@ -1,10 +1,11 @@
-"""Client for OpenCode executor service."""
+"""Client for OpenCode executor service (with internal auth)."""
 import logging
 from typing import Dict, Any
 
 import httpx
 
 from src.config import settings
+from shared.security import API_KEY_HEADER
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +15,12 @@ class OpenCodeClient:
     
     def __init__(self):
         self.base_url = settings.OPCODE_API_URL
+        self.api_key = settings.INTERNAL_API_KEY
         self.timeout = 300.0  # 5 minutes for long operations
+        self.headers = {
+            "Content-Type": "application/json",
+            API_KEY_HEADER: self.api_key
+        }
     
     async def execute_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
         """Send a task to the OpenCode executor."""
@@ -25,6 +31,7 @@ class OpenCodeClient:
                 response = await client.post(
                     f"{self.base_url}/execute",
                     json=task,
+                    headers=self.headers,
                     timeout=self.timeout
                 )
                 response.raise_for_status()
@@ -58,6 +65,7 @@ class OpenCodeClient:
             async with httpx.AsyncClient() as client:
                 response = await client.get(
                     f"{self.base_url}/health",
+                    headers=self.headers,
                     timeout=5.0
                 )
                 return response.status_code == 200
@@ -70,6 +78,7 @@ class OpenCodeClient:
             async with httpx.AsyncClient() as client:
                 response = await client.get(
                     f"{self.base_url}/status",
+                    headers=self.headers,
                     timeout=5.0
                 )
                 return response.json()

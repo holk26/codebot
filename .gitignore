@@ -1,0 +1,42 @@
+# .env files - contain secrets
+.env
+.env.*
+!.env.example
+
+# Backup files
+*.backup.*
+
+# Certificates and keys
+*.pem
+*.key
+*.crt
+traefik/certs/acme.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
