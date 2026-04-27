@@ -1,13 +1,6 @@
 # ============================================
 # OPENCODE EXECUTOR - HARDENED DOCKERFILE
 # ============================================
-# Security features:
-# - Multi-stage build
-# - Non-root user
-# - Read-only root filesystem
-# - Minimal attack surface
-# - Sandboxed workspace
-# ============================================
 
 ARG APP_USER=appuser
 ARG APP_UID=1000
@@ -38,7 +31,7 @@ FROM python:3.11-slim
 ARG APP_USER
 ARG APP_UID
 
-# Install runtime dependencies only (Node.js for JS tooling)
+# Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \

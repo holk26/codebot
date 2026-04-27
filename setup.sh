@@ -1,18 +1,14 @@
 #!/bin/bash
 # ============================================
 # SECURE SETUP SCRIPT for GitHub AI Agent (Dokploy)
-# ============================================
-# This script:
-# 1. Checks dependencies
-# 2. Generates cryptographically secure secrets
-# 3. Creates .env file
-# 4. Sets correct file permissions
+# DEFAULT LLM: Moonshot AI
 # ============================================
 
 set -euo pipefail
 
 echo "============================================"
 echo "GitHub AI Agent - SECURE Setup (Dokploy)"
+echo "Default LLM: Moonshot AI"
 echo "============================================"
 
 # Check dependencies
@@ -64,15 +60,39 @@ GITHUB_APP_ID=
 GITHUB_PRIVATE_KEY=
 
 # ============================================
-# LLM PROVIDERS
+# NANOBOT ORCHESTRATOR LLM (Default: Moonshot)
 # ============================================
-LLM_PROVIDER=openrouter
-LLM_API_KEY=sk-or-v1-REPLACE_ME
-LLM_MODEL=anthropic/claude-opus-4
+NANOBOT_LLM_PROVIDER=moonshot
+NANOBOT_LLM_MODEL=kimi
 
-OPENCODE_LLM_PROVIDER=openrouter
-OPENCODE_LLM_API_KEY=sk-or-v1-REPLACE_ME
-OPENCODE_LLM_MODEL=anthropic/claude-opus-4
+# Provider API Keys
+MOONSHOT_API_KEY=sk-REPLACE_ME
+OPENROUTER_API_KEY=
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+DEEPSEEK_API_KEY=
+GOOGLE_API_KEY=
+MISTRAL_API_KEY=
+
+# ============================================
+# OPENCODE EXECUTOR LLM (Default: Moonshot)
+# ============================================
+OPENCODE_LLM_PROVIDER=moonshot
+OPENCODE_LLM_API_KEY=sk-REPLACE_ME
+OPENCODE_LLM_MODEL=kimi
+
+# ============================================
+# TELEGRAM INTEGRATION
+# ============================================
+TELEGRAM_BOT_TOKEN=
+
+# ============================================
+# OPTIONAL: DISCORD / SLACK
+# ============================================
+DISCORD_BOT_TOKEN=
+DISCORD_GUILD_ID=
+SLACK_BOT_TOKEN=
+SLACK_CHANNEL=
 
 # ============================================
 # SERVICE CONFIG
@@ -85,7 +105,7 @@ WORKSPACE_DIR=/workspace
 ALLOWED_ACTIONS=opened,reopened,edited
 SKIP_LABEL=agent-skip
 LOG_LEVEL=INFO
-NANOBOT_CONFIG_PATH=/app/config/nanobot.json
+NANOBOT_CONFIG_PATH=/home/appuser/.nanobot/config.json
 EOF
 
 # Set restrictive permissions on .env
@@ -105,24 +125,31 @@ echo "============================================"
 echo "SETUP COMPLETE"
 echo "============================================"
 echo ""
-echo "SECURITY CHECKLIST:"
-echo "  [ ] Edit .env and set your real values (no REPLACE_ME left)"
-echo "  [ ] Set GITHUB_TOKEN with 'repo' and 'write:discussion' scopes"
-echo "  [ ] Set GITHUB_REPO to owner/repository format"
-echo "  [ ] Set LLM_API_KEY and OPENCODE_LLM_API_KEY"
-echo "  [ ] Configure GitHub webhook secret to match GITHUB_WEBHOOK_SECRET"
+echo "NEXT STEPS:"
 echo ""
-echo "DOKPLOY DEPLOYMENT:"
-echo "  1. Upload this project to your Git repository"
-echo "  2. In Dokploy, create a new Compose deployment"
-echo "  3. Point to your repository"
-echo "  4. In Dokploy UI, add environment variables from .env"
-echo "  5. Set domain for nanobot-orchestrator service"
-echo "  6. Configure GitHub webhook to the Dokploy domain"
+echo "1. Get a Moonshot API key:"
+echo "   https://platform.moonshot.cn"
+echo ""
+echo "2. Edit .env and set:"
+echo "   - MOONSHOT_API_KEY (for Nanobot + OpenCode)"
+echo "   - GITHUB_TOKEN"
+echo "   - GITHUB_REPO"
+echo ""
+echo "3. (Optional) Set TELEGRAM_BOT_TOKEN for notifications"
+echo ""
+echo "4. Deploy to Dokploy:"
+echo "   - Upload code to Git repository"
+echo "   - In Dokploy: Create Service -> Compose -> Select repo"
+echo "   - Add environment variables from .env"
+echo "   - Set domain for nanobot-orchestrator service"
+echo "   - Deploy"
+echo ""
+echo "5. Configure GitHub webhook:"
+echo "   https://YOUR_DOMAIN/webhook/github"
 echo ""
 echo "IMPORTANT:"
 echo "  - Keep .env file secure (chmod 600)"
 echo "  - Never commit .env to git"
-echo "  - The webhook secret in GitHub MUST match GITHUB_WEBHOOK_SECRET in .env"
-echo "  - opencode-executor is NOT exposed to the internet (internal network only)"
+echo "  - The webhook secret in GitHub MUST match GITHUB_WEBHOOK_SECRET"
+echo "  - opencode-executor is NOT exposed to the internet"
 echo ""

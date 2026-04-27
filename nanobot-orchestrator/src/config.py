@@ -1,4 +1,4 @@
-"""Configuration settings for nanobot orchestrator (Hardened)."""
+"""Configuration settings for nanobot orchestrator (with nanobot-ai integration)."""
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -20,10 +20,14 @@ class Settings:
     GITHUB_APP_ID: str = os.getenv("GITHUB_APP_ID", "")
     GITHUB_PRIVATE_KEY: str = os.getenv("GITHUB_PRIVATE_KEY", "")
     
-    # LLM
-    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "openrouter")
-    LLM_API_KEY: str = os.getenv("LLM_API_KEY", "")
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "anthropic/claude-opus-4")
+    # Nanobot LLM (primary orchestrator) - Default: Moonshot
+    NANOBOT_LLM_PROVIDER: str = os.getenv("NANOBOT_LLM_PROVIDER", "moonshot")
+    NANOBOT_LLM_MODEL: str = os.getenv("NANOBOT_LLM_MODEL", "kimi")
+    
+    # OpenCode Executor LLM - Default: Moonshot
+    LLM_PROVIDER: str = os.getenv("OPENCODE_LLM_PROVIDER", "moonshot")
+    LLM_API_KEY: str = os.getenv("OPENCODE_LLM_API_KEY", "")
+    LLM_MODEL: str = os.getenv("OPENCODE_LLM_MODEL", "kimi")
     
     # OpenCode Executor
     OPCODE_API_URL: str = os.getenv("OPCODE_API_URL", "http://opencode-executor:8001")
@@ -50,7 +54,16 @@ class Settings:
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     
     # Nanobot
-    NANOBOT_CONFIG_PATH: str = os.getenv("NANOBOT_CONFIG_PATH", "/app/config/nanobot.json")
+    NANOBOT_CONFIG_PATH: str = os.getenv("NANOBOT_CONFIG_PATH", "/home/appuser/.nanobot/config.json")
+    
+    # Telegram
+    TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    
+    # Discord/Slack (optional)
+    DISCORD_BOT_TOKEN: str = os.getenv("DISCORD_BOT_TOKEN", "")
+    DISCORD_GUILD_ID: str = os.getenv("DISCORD_GUILD_ID", "")
+    SLACK_BOT_TOKEN: str = os.getenv("SLACK_BOT_TOKEN", "")
+    SLACK_CHANNEL: str = os.getenv("SLACK_CHANNEL", "")
 
 
 settings = Settings()

@@ -1,4 +1,4 @@
-"""LLM client for reasoning and code generation."""
+"""LLM client for reasoning and code generation (Moonshot compatible)."""
 import json
 import logging
 from typing import Optional
@@ -23,26 +23,35 @@ class LLMClient:
         
         if self.provider == "anthropic":
             return await self._call_anthropic(system_prompt, user_prompt, temperature)
+        elif self.provider == "moonshot":
+            return await self._call_openai_compatible(system_prompt, user_prompt, temperature, "https://api.moonshot.cn/v1")
         else:
             return await self._call_openai_compatible(system_prompt, user_prompt, temperature)
     
-    async def _call_openai_compatible(self, system_prompt: str, user_prompt: str, temperature: float) -> str:
-        """Call OpenAI-compatible API (includes OpenRouter)."""
+    async def _call_openai_compatible(self, system_prompt: str, user_prompt: str, temperature: float, base_url: str = None) -> str:
+        """Call OpenAI-compatible API (includes OpenRouter, Moonshot, OpenAI, DeepSeek)."""
         
-        if self.provider == "openrouter":
-            base_url = "https://openrouter.ai/api/v1"
-        else:
-            base_url = "https://api.openai.com/v1"
+        if base_url is None:
+            if self.provider == "openrouter":
+                base_url = "https://openrouter.ai/api/v1"
+            elif self.provider == "deepseek":
+                base_url = "https://api.deepseek.com/v1"
+            else:
+                base_url = "https://api.openai.com/v1"
         
         async with httpx.AsyncClient() as client:
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            }
+            # Add OpenRouter-specific headers
+            if self.provider == "openrouter":
+                headers["HTTP-Referer"] = "https://github.com/opencode-executor"
+                headers["X-Title"] = "OpenCode Executor"
+            
             response = await client.post(
                 f"{base_url}/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "https://github.com/opencode-executor",
-                    "X-Title": "OpenCode Executor"
-                },
+                headers=headers,
                 json={
                     "model": self.model,
                     "messages": [

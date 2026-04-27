@@ -12,10 +12,10 @@ load_dotenv()
 class Settings:
     """OpenCode executor settings."""
     
-    # LLM
-    LLM_PROVIDER: str = os.getenv("OPENCODE_LLM_PROVIDER", "openrouter")
+    # LLM - Default: Moonshot
+    LLM_PROVIDER: str = os.getenv("OPENCODE_LLM_PROVIDER", "moonshot")
     LLM_API_KEY: str = os.getenv("OPENCODE_LLM_API_KEY", "")
-    LLM_MODEL: str = os.getenv("OPENCODE_LLM_MODEL", "anthropic/claude-opus-4")
+    LLM_MODEL: str = os.getenv("OPENCODE_LLM_MODEL", "kimi")
     
     # API
     API_PORT: int = int(os.getenv("OPENCODE_API_PORT", "8001"))

@@ -1,35 +1,117 @@
 {
   "providers": {
+    "moonshot": {
+      "apiKey": "${MOONSHOT_API_KEY}",
+      "baseUrl": "https://api.moonshot.cn/v1"
+    },
     "openrouter": {
-      "apiKey": "${LLM_API_KEY}"
+      "apiKey": "${OPENROUTER_API_KEY}",
+      "baseUrl": "https://openrouter.ai/api/v1"
+    },
+    "openai": {
+      "apiKey": "${OPENAI_API_KEY}"
+    },
+    "anthropic": {
+      "apiKey": "${ANTHROPIC_API_KEY}"
+    },
+    "deepseek": {
+      "apiKey": "${DEEPSEEK_API_KEY}",
+      "baseUrl": "https://api.deepseek.com"
+    },
+    "google": {
+      "apiKey": "${GOOGLE_API_KEY}"
+    },
+    "mistral": {
+      "apiKey": "${MISTRAL_API_KEY}"
     }
   },
   "agents": {
     "defaults": {
-      "provider": "openrouter",
-      "model": "anthropic/claude-opus-4"
+      "provider": "${NANOBOT_LLM_PROVIDER:-moonshot}",
+      "model": "${NANOBOT_LLM_MODEL:-kimi}",
+      "temperature": 0.3,
+      "max_tokens": 4096
+    },
+    "issue_analyzer": {
+      "provider": "${NANOBOT_LLM_PROVIDER:-moonshot}",
+      "model": "${NANOBOT_LLM_MODEL:-kimi}",
+      "temperature": 0.2,
+      "max_tokens": 2048
+    },
+    "code_reviewer": {
+      "provider": "${NANOBOT_LLM_PROVIDER:-moonshot}",
+      "model": "${NANOBOT_LLM_MODEL:-kimi}",
+      "temperature": 0.1,
+      "max_tokens": 4096
     }
   },
   "channels": {
+    "telegram": {
+      "enabled": true,
+      "token": "${TELEGRAM_BOT_TOKEN}",
+      "allowed_users": [],
+      "notify_on_issue": true,
+      "notify_on_pr": true
+    },
+    "discord": {
+      "enabled": false,
+      "token": "${DISCORD_BOT_TOKEN}",
+      "guild_id": "${DISCORD_GUILD_ID}"
+    },
+    "slack": {
+      "enabled": false,
+      "token": "${SLACK_BOT_TOKEN}",
+      "channel": "${SLACK_CHANNEL}"
+    },
     "websocket": {
-      "enabled": false
+      "enabled": false,
+      "port": 8081
     }
+  },
+  "memory": {
+    "enabled": true,
+    "type": "sqlite",
+    "path": "/app/data/memory.db",
+    "max_tokens": 8000,
+    "context_window": 128000
   },
   "skills": {
     "enabled": [
       "shell",
       "file",
-      "git"
-    ]
-  },
-  "memory": {
-    "enabled": true,
-    "max_tokens": 4000
+      "git",
+      "web_search",
+      "github"
+    ],
+    "disabled": [],
+    "custom_skills_path": "/app/skills"
   },
   "sandbox": {
     "enabled": true,
     "allowed_paths": [
-      "/workspace"
+      "/workspace",
+      "/app/data"
+    ],
+    "blocked_commands": [
+      "rm -rf /",
+      "mkfs",
+      "dd",
+      "> /dev/sda",
+      "chmod -R 777 /"
     ]
+  },
+  "logging": {
+    "level": "${LOG_LEVEL:-INFO}",
+    "file": "/app/logs/nanobot.log",
+    "max_size": "10MB",
+    "backup_count": 5
+  },
+  "github_integration": {
+    "enabled": true,
+    "token": "${GITHUB_TOKEN}",
+    "webhook_secret": "${GITHUB_WEBHOOK_SECRET}",
+    "auto_comment": true,
+    "auto_label": true,
+    "default_repo": "${GITHUB_REPO}"
   }
 }

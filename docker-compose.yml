@@ -7,7 +7,6 @@ version: "3.8"
 #   - Reverse proxy (Traefik internally)
 #   - SSL/TLS (Let's Encrypt automatically)
 #   - Domain routing
-#   - Health checks UI
 #
 # You only need to:
 #   1. Deploy this compose file in Dokploy
@@ -17,7 +16,7 @@ version: "3.8"
 
 services:
   # ============================================
-  # REDIS (Database - isolated network)
+  # REDIS (Database - internal network)
   # ============================================
   redis:
     image: redis:7-alpine
@@ -61,8 +60,8 @@ services:
   # ============================================
   nanobot-orchestrator:
     build:
-      context: ./nanobot-orchestrator
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: nanobot-orchestrator/Dockerfile
       args:
         - APP_USER=appuser
         - APP_UID=1000
@@ -79,6 +78,8 @@ services:
     read_only: true
     tmpfs:
       - /tmp:noexec,nosuid,size=100m
+      - /root/.nanobot/data:noexec,nosuid,size=200m
+      - /root/.nanobot/logs:noexec,nosuid,size=50m
     ports:
       - "8080:8080"
     env_file:
@@ -89,8 +90,10 @@ services:
       - WORKSPACE_DIR=/workspace
       - WEBHOOK_PORT=8080
       - WEBHOOK_HOST=0.0.0.0
+      - NANOBOT_CONFIG_PATH=/root/.nanobot/config.json
     volumes:
       - workspace_data:/workspace
+      - ./nanobot-orchestrator/config:/app/config:ro
     depends_on:
       redis:
         condition: service_healthy
@@ -115,8 +118,8 @@ services:
   # ============================================
   opencode-executor:
     build:
-      context: ./opencode-executor
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: opencode-executor/Dockerfile
       args:
         - APP_USER=appuser
         - APP_UID=1000
@@ -166,4 +169,4 @@ networks:
     driver: bridge
   internal:
     driver: bridge
-    internal: true  # No outbound internet access - isolated
+    internal: true

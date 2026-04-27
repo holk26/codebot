@@ -1,6 +1,7 @@
-"""Issue analysis using LLM."""
+"""Issue analysis using LLM (integrated with nanobot-ai configuration)."""
 import json
 import logging
+import os
 from typing import Dict, Any
 
 import httpx
@@ -11,17 +12,35 @@ logger = logging.getLogger(__name__)
 
 
 class IssueAnalyzer:
-    """Analyzes GitHub issues to determine required actions."""
+    """Analyzes GitHub issues to determine required actions.
+    
+    Uses the LLM configuration from nanobot-ai settings.
+    Default provider: Moonshot AI
+    """
     
     def __init__(self):
-        self.api_key = settings.LLM_API_KEY
-        self.provider = settings.LLM_PROVIDER
-        self.model = settings.LLM_MODEL
+        # Use nanobot's LLM config for analysis
+        self.api_key = self._get_api_key_for_provider(settings.NANOBOT_LLM_PROVIDER)
+        self.provider = settings.NANOBOT_LLM_PROVIDER
+        self.model = settings.NANOBOT_LLM_MODEL
+    
+    def _get_api_key_for_provider(self, provider: str) -> str:
+        """Get the API key for the configured provider."""
+        provider_keys = {
+            "moonshot": os.getenv("MOONSHOT_API_KEY", settings.LLM_API_KEY),
+            "openrouter": os.getenv("OPENROUTER_API_KEY", settings.LLM_API_KEY),
+            "openai": os.getenv("OPENAI_API_KEY", settings.LLM_API_KEY),
+            "anthropic": os.getenv("ANTHROPIC_API_KEY", settings.LLM_API_KEY),
+            "deepseek": os.getenv("DEEPSEEK_API_KEY", settings.LLM_API_KEY),
+            "google": os.getenv("GOOGLE_API_KEY", settings.LLM_API_KEY),
+            "mistral": os.getenv("MISTRAL_API_KEY", settings.LLM_API_KEY),
+        }
+        return provider_keys.get(provider, settings.LLM_API_KEY)
     
     async def analyze_issue(self, issue: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze an issue and determine if code changes are needed."""
         
-        system_prompt = """You are an expert software engineering assistant. Analyze GitHub issues and determine the best course of action.
+        system_prompt = """You are an expert software engineering assistant powered by nanobot-ai. Analyze GitHub issues and determine the best course of action.
 
 Respond ONLY with a JSON object in this exact format:
 {
@@ -52,6 +71,7 @@ Author: {issue.get('user', 'Unknown')}
 """
         
         try:
+            logger.info(f"Analyzing issue with nanobot-ai provider: {self.provider}, model: {self.model}")
             response = await self._call_llm(system_prompt, user_prompt)
             
             # Extract JSON from response
@@ -83,27 +103,33 @@ Author: {issue.get('user', 'Unknown')}
     async def _call_llm(self, system_prompt: str, user_prompt: str) -> str:
         """Call LLM API based on configured provider."""
         
-        if self.provider in ("openrouter", "openai"):
-            return await self._call_openai_compatible(system_prompt, user_prompt)
-        elif self.provider == "anthropic":
+        if self.provider == "anthropic":
             return await self._call_anthropic(system_prompt, user_prompt)
+        elif self.provider == "moonshot":
+            return await self._call_openai_compatible(system_prompt, user_prompt, "https://api.moonshot.cn/v1")
+        elif self.provider == "deepseek":
+            return await self._call_openai_compatible(system_prompt, user_prompt, "https://api.deepseek.com/v1")
         else:
-            # Default to OpenAI-compatible
-            return await self._call_openai_compatible(system_prompt, user_prompt)
+            # openrouter, openai, and others use OpenAI-compatible API
+            base_url = "https://openrouter.ai/api/v1" if self.provider == "openrouter" else "https://api.openai.com/v1"
+            return await self._call_openai_compatible(system_prompt, user_prompt, base_url)
     
-    async def _call_openai_compatible(self, system_prompt: str, user_prompt: str) -> str:
+    async def _call_openai_compatible(self, system_prompt: str, user_prompt: str, base_url: str) -> str:
         """Call OpenAI-compatible API."""
-        base_url = "https://openrouter.ai/api/v1" if self.provider == "openrouter" else "https://api.openai.com/v1"
         
         async with httpx.AsyncClient() as client:
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            }
+            # Add OpenRouter-specific headers
+            if self.provider == "openrouter":
+                headers["HTTP-Referer"] = "https://github.com/nanobot-orchestrator"
+                headers["X-Title"] = "Nanobot Orchestrator"
+            
             response = await client.post(
                 f"{base_url}/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "https://github.com/nanobot-orchestrator",
-                    "X-Title": "Nanobot Orchestrator"
-                },
+                headers=headers,
                 json={
                     "model": self.model,
                     "messages": [

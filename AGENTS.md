@@ -61,7 +61,7 @@ docker compose logs -f  # View logs
 - **Audit logging**: All requests logged with IP, method, path, status, duration
 
 ## LLM Configuration
-Supported providers: openrouter, openai, anthropic
+Supported providers: moonshot, openrouter, openai, anthropic, deepseek, google, mistral
 Configure via `.env` variables:
 - `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL`
 - `OPENCODE_LLM_PROVIDER`, `OPENCODE_LLM_API_KEY`, `OPENCODE_LLM_MODEL`
