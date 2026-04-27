@@ -1,11 +1,13 @@
-"""OpenCode Executor - Main Entry Point (Hardened + Web Auth)
+"""OpenCode Executor - Main Entry Point (Hardened + Web Auth + Web UI)
 Service that executes code changes controlled by Nanobot.
 Can be exposed to the internet via Dokploy with Basic Auth protection.
+Serves a web UI at the root path.
 """
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import uvicorn
 
 from src.config import settings
@@ -59,6 +61,20 @@ app.add_middleware(
 )
 
 app.include_router(router, prefix="", tags=["executor"])
+
+# Serve web UI static files
+try:
+    app.mount("/static", StaticFiles(directory="/app/web", check_dir=False), name="static")
+except RuntimeError:
+    # Fallback for development or if directory doesn't exist
+    pass
+
+
+@app.get("/", include_in_schema=False)
+async def root():
+    """Redirect root to web UI."""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/static/index.html")
 
 
 if __name__ == "__main__":

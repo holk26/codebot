@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenCode Executor</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 {
+            color: #58a6ff;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle { color: #8b949e; margin-bottom: 2rem; }
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .card h2 {
+            color: #f0883e;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #3fb950;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .info-item {
+            background: #0d1117;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid #21262d;
+        }
+        .info-item label {
+            display: block;
+            font-size: 0.75rem;
+            color: #8b949e;
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+        .info-item value {
+            color: #c9d1d9;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.9rem;
+        }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #8b949e;
+            font-size: 0.85rem;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            color: #c9d1d9;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+        textarea { min-height: 120px; resize: vertical; }
+        button {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background: #2ea043; }
+        button:disabled {
+            background: #30363d;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            display: none;
+        }
+        .result.success { background: #0d2818; border: 1px solid #238636; color: #3fb950; }
+        .result.error { background: #3d0d0d; border: 1px solid #da3633; color: #f85149; }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #30363d;
+            border-top-color: #58a6ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .hidden { display: none !important; }
+        .auth-banner {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .auth-banner span { color: #8b949e; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>OpenCode Executor</h1>
+        <p class="subtitle">AI-powered code execution for GitHub issues</p>
+
+        <div class="auth-banner">
+            <span>Service Status: <span class="status-indicator"></span> <strong id="service-status">Loading...</strong></span>
+            <span id="auth-user"></span>
+        </div>
+
+        <div class="card">
+            <h2>System Status</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Service</label>
+                    <value id="status-service">-</value>
+                </div>
+                <div class="info-item">
+                    <label>Model</label>
+                    <value id="status-model">-</value>
+                </div>
+                <div class="info-item">
+                    <label>Workspace</label>
+                    <value id="status-workspace">-</value>
+                </div>
+                <div class="info-item">
+                    <label>Version</label>
+                    <value>1.0.0</value>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Execute Task</h2>
+            <div class="form-group">
+                <label>Repository (owner/repo)</label>
+                <input type="text" id="repo" placeholder="e.g., octocat/Hello-World" value="">
+            </div>
+            <div class="form-group">
+                <label>Issue Number</label>
+                <input type="number" id="issue-number" placeholder="e.g., 42" value="">
+            </div>
+            <div class="form-group">
+                <label>Issue Title</label>
+                <input type="text" id="issue-title" placeholder="Brief description of the issue">
+            </div>
+            <div class="form-group">
+                <label>Issue Body</label>
+                <textarea id="issue-body" placeholder="Detailed description of what needs to be fixed..."></textarea>
+            </div>
+            <button id="execute-btn" onclick="executeTask()">
+                <span id="btn-spinner" class="spinner hidden"></span>
+                <span id="btn-text">Execute</span>
+            </button>
+            <div id="result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // Parse credentials from URL if present (for browser auth)
+        const urlParams = new URLSearchParams(window.location.search);
+        const userParam = urlParams.get('user');
+        if (userParam) {
+            document.getElementById('auth-user').textContent = 'Logged in: ' + userParam;
+        }
+
+        // Load status on page load
+        async function loadStatus() {
+            try {
+                const response = await fetch('/status');
+                const data = await response.json();
+                document.getElementById('status-service').textContent = data.service || 'opencode-executor';
+                document.getElementById('status-model').textContent = data.model || '-';
+                document.getElementById('status-workspace').textContent = data.workspace || '-';
+                document.getElementById('service-status').textContent = 'Online';
+            } catch (e) {
+                document.getElementById('service-status').textContent = 'Offline';
+                document.getElementById('service-status').style.color = '#f85149';
+            }
+        }
+
+        async function executeTask() {
+            const btn = document.getElementById('execute-btn');
+            const spinner = document.getElementById('btn-spinner');
+            const btnText = document.getElementById('btn-text');
+            const resultDiv = document.getElementById('result');
+
+            const repo = document.getElementById('repo').value;
+            const issueNumber = parseInt(document.getElementById('issue-number').value);
+            const issueTitle = document.getElementById('issue-title').value;
+            const issueBody = document.getElementById('issue-body').value;
+
+            if (!repo || !issueNumber || !issueTitle) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'Error: Repository, Issue Number, and Title are required.';
+                resultDiv.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            spinner.classList.remove('hidden');
+            btnText.textContent = 'Executing...';
+            resultDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('/execute', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Internal-API-Key': 'browser-request-no-key'
+                    },
+                    body: JSON.stringify({
+                        repo: repo,
+                        issue_number: issueNumber,
+                        issue_title: issueTitle,
+                        issue_body: issueBody,
+                        analysis: {
+                            summary: "Manual execution from web UI",
+                            requires_code_changes: true
+                        },
+                        task_type: "fix_issue"
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `Success!\n\nSummary: ${data.summary}\nPR URL: ${data.pr_url || 'N/A'}\n\nChanges: ${JSON.stringify(data.changes, null, 2)}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `Error: ${data.error || 'Unknown error'}`;
+                }
+            } catch (e) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `Request failed: ${e.message}`;
+            } finally {
+                btn.disabled = false;
+                spinner.classList.add('hidden');
+                btnText.textContent = 'Execute';
+                resultDiv.style.display = 'block';
+            }
+        }
+
+        loadStatus();
+    </script>
+</body>
+</html>

@@ -59,6 +59,7 @@ RUN mkdir -p /app/src /workspace /tmp && \
 
 # Copy application code
 COPY --chown=${APP_USER}:${APP_USER} opencode-executor/src/ /app/src/
+COPY --chown=${APP_USER}:${APP_USER} opencode-executor/web/ /app/web/
 COPY --chown=${APP_USER}:${APP_USER} shared/ /app/shared/
 
 # Switch to non-root user

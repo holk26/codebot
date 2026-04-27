@@ -64,8 +64,9 @@
       "channel": "${SLACK_CHANNEL}"
     },
     "websocket": {
-      "enabled": false,
-      "port": 8081
+      "enabled": true,
+      "port": 8081,
+      "host": "0.0.0.0"
     }
   },
   "memory": {
