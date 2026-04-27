@@ -58,7 +58,8 @@ ENV PATH="/opt/venv/bin:$PATH"
 WORKDIR /app
 
 # Create directories with proper ownership
-RUN mkdir -p /app/src /app/config /app/data /app/logs /app/skills /workspace /tmp /home/${APP_USER}/.nanobot && \
+# /home/appuser/.nanobot is the runtime data directory (mounted as volume)
+RUN mkdir -p /app/src /app/config /app/data /app/logs /app/skills /workspace /tmp /home/${APP_USER}/.nanobot/data /home/${APP_USER}/.nanobot/logs && \
     chown -R ${APP_USER}:${APP_USER} /app /workspace /tmp /home/${APP_USER}
 
 # Copy application code

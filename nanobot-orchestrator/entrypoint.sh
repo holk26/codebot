@@ -12,9 +12,14 @@ NANOBOT_CONFIG_FILE="${NANOBOT_CONFIG_DIR}/config.json"
 TEMPLATE_FILE="/app/config/nanobot.json.template"
 
 echo "[entrypoint] Preparing nanobot configuration..."
+echo "[entrypoint] HOME=${HOME}"
+echo "[entrypoint] Config dir=${NANOBOT_CONFIG_DIR}"
 
-# Create nanobot config directory
-mkdir -p "${NANOBOT_CONFIG_DIR}/data" "${NANOBOT_CONFIG_DIR}/logs"
+# Create nanobot config directory (with -p to avoid errors if exists)
+# This directory is backed by a named volume in docker-compose.yml
+mkdir -p "${NANOBOT_CONFIG_DIR}/data" "${NANOBOT_CONFIG_DIR}/logs" || {
+    echo "[entrypoint] WARNING: Could not create some directories (may already exist or volume not mounted)"
+}
 
 # Render template with environment variables
 if [ -f "${TEMPLATE_FILE}" ]; then
