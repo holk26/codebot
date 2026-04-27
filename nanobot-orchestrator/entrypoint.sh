@@ -1,34 +1,22 @@
 #!/bin/sh
 # ============================================
 # Nanobot Orchestrator Entrypoint
-# 1. Renders nanobot config from template with env vars
+# 1. Generates nanobot config via Python (robust, handles missing env vars)
 # 2. Starts nanobot gateway (native WebSocket server)
-# 3. Starts our webhook server (FastAPI)
+# 3. Starts our webhook server (FastAPI) for GitHub webhooks
 # ============================================
 
 set -e
 
-NANOBOT_CONFIG_DIR="${HOME}/.nanobot"
-NANOBOT_CONFIG_FILE="${NANOBOT_CONFIG_DIR}/config.json"
-TEMPLATE_FILE="/app/config/nanobot.json.template"
-
-echo "[entrypoint] Preparing nanobot configuration..."
 echo "[entrypoint] HOME=${HOME}"
-echo "[entrypoint] Config dir=${NANOBOT_CONFIG_DIR}"
+echo "[entrypoint] Config dir=${HOME}/.nanobot"
 
-# Create nanobot config directory
-mkdir -p "${NANOBOT_CONFIG_DIR}/data" "${NANOBOT_CONFIG_DIR}/logs" || {
-    echo "[entrypoint] WARNING: Could not create some directories (may already exist or volume not mounted)"
-}
+# Create directories
+mkdir -p "${HOME}/.nanobot/data" "${HOME}/.nanobot/logs" "${HOME}/.nanobot/skills"
 
-# Render template with environment variables
-if [ -f "${TEMPLATE_FILE}" ]; then
-    echo "[entrypoint] Rendering nanobot config from template..."
-    envsubst < "${TEMPLATE_FILE}" > "${NANOBOT_CONFIG_FILE}"
-    echo "[entrypoint] Nanobot config written to ${NANOBOT_CONFIG_FILE}"
-else
-    echo "[entrypoint] WARNING: Template not found at ${TEMPLATE_FILE}"
-fi
+# Generate nanobot config using Python (more robust than envsubst)
+echo "[entrypoint] Generating nanobot config..."
+python3 /app/generate_config.py
 
 # Validate required secrets
 if [ -z "${INTERNAL_API_KEY}" ]; then
@@ -45,14 +33,33 @@ if [ -z "${GITHUB_WEBHOOK_SECRET}" ]; then
     echo "[entrypoint] WARNING: GITHUB_WEBHOOK_SECRET is not set - webhooks will be rejected"
 fi
 
+# Check if config was generated
+if [ ! -f "${HOME}/.nanobot/config.json" ]; then
+    echo "[entrypoint] ERROR: Config file was not generated!"
+    exit 1
+fi
+
+echo "[entrypoint] Config generated successfully."
+
 # Start nanobot gateway in background (native WebSocket server)
-echo "[entrypoint] Starting nanobot gateway (WebSocket server on port 8081)..."
-nanobot gateway &
+# Use default nanobot port (18790) or override with NANOBOT_GATEWAY_PORT
+echo "[entrypoint] Starting nanobot gateway..."
+if [ -n "${NANOBOT_GATEWAY_PORT}" ]; then
+    nanobot gateway --port "${NANOBOT_GATEWAY_PORT}" &
+else
+    nanobot gateway &
+fi
 NANOBOT_GATEWAY_PID=$!
 echo "[entrypoint] Nanobot gateway started with PID ${NANOBOT_GATEWAY_PID}"
 
 # Give nanobot gateway a moment to start
-sleep 2
+sleep 3
+
+# Verify gateway is running
+if ! kill -0 "${NANOBOT_GATEWAY_PID}" 2>/dev/null; then
+    echo "[entrypoint] ERROR: Nanobot gateway failed to start!"
+    exit 1
+fi
 
 echo "[entrypoint] Starting Nanobot Orchestrator webhook server (port 8080)..."
 
