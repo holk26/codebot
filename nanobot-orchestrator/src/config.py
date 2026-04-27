@@ -22,7 +22,7 @@ class Settings:
     
     # Nanobot LLM (primary orchestrator) - Default: Moonshot
     NANOBOT_LLM_PROVIDER: str = os.getenv("NANOBOT_LLM_PROVIDER", "moonshot")
-    NANOBOT_LLM_MODEL: str = os.getenv("NANOBOT_LLM_MODEL", "kimi")
+    NANOBOT_LLM_MODEL: str = os.getenv("NANOBOT_LLM_MODEL", "kimi-k2.6")
     
     # OpenCode Executor LLM - Default: Moonshot
     LLM_PROVIDER: str = os.getenv("OPENCODE_LLM_PROVIDER", "moonshot")

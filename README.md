@@ -63,7 +63,7 @@ NANOBOT_LLM_PROVIDER=moonshot
 
 # Modelo (depende del proveedor)
 # Moonshot ejemplos:
-NANOBOT_LLM_MODEL=kimi
+NANOBOT_LLM_MODEL=kimi-k2.6
 # NANOBOT_LLM_MODEL=openai/gpt-4o
 # NANOBOT_LLM_MODEL=deepseek/deepseek-chat
 # NANOBOT_LLM_MODEL=google/gemini-2.5-pro
@@ -166,7 +166,7 @@ nano .env
 # - GITHUB_TOKEN=ghp_...
 # - GITHUB_REPO=owner/repo
 # - NANOBOT_LLM_PROVIDER=moonshot
-# - NANOBOT_LLM_MODEL=kimi
+# - NANOBOT_LLM_MODEL=kimi-k2.6
 # - OPENROUTER_API_KEY=sk-or-v1-...
 # - OPENCODE_LLM_API_KEY=sk-or-v1-...
 # - TELEGRAM_BOT_TOKEN=123456789:... (opcional)
@@ -326,7 +326,7 @@ curl -X POST https://TU_DOMINIO/webhook/github \
 
 ### Error "model not found" en nanobot
 - Verifica que el modelo existe en tu proveedor
-- Para Moonshot, lista modelos disponibles: https://platform.moonshot.cn/docs
+- Para Moonshot, lista modelos disponibles: https://platform.kimi.ai/playground
 - Asegúrate de que la API key tiene crédito/saldo
 
 ### Dokploy no despliega
@@ -338,7 +338,7 @@ curl -X POST https://TU_DOMINIO/webhook/github \
 
 | Proveedor | Modelo recomendado | Variable |
 |-----------|-------------------|----------|
-| **Moonshot** | `kimi` | `NANOBOT_LLM_MODEL` |
+| **Moonshot** | `kimi-k2.6` | `NANOBOT_LLM_MODEL` |
 | **Moonshot** | `kimi-latest` | `NANOBOT_LLM_MODEL` |
 | OpenRouter | `anthropic/claude-sonnet-4` | `NANOBOT_LLM_MODEL` |
 | OpenAI | `gpt-4o` | `NANOBOT_LLM_MODEL` |

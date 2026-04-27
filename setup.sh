@@ -63,7 +63,7 @@ GITHUB_PRIVATE_KEY=
 # NANOBOT ORCHESTRATOR LLM (Default: Moonshot)
 # ============================================
 NANOBOT_LLM_PROVIDER=moonshot
-NANOBOT_LLM_MODEL=kimi
+NANOBOT_LLM_MODEL=kimi-k2.6
 
 # Provider API Keys
 MOONSHOT_API_KEY=sk-REPLACE_ME
@@ -79,7 +79,7 @@ MISTRAL_API_KEY=
 # ============================================
 OPENCODE_LLM_PROVIDER=moonshot
 OPENCODE_LLM_API_KEY=sk-REPLACE_ME
-OPENCODE_LLM_MODEL=kimi
+OPENCODE_LLM_MODEL=kimi-k2.6
 
 # ============================================
 # TELEGRAM INTEGRATION
@@ -128,7 +128,7 @@ echo ""
 echo "NEXT STEPS:"
 echo ""
 echo "1. Get a Moonshot API key:"
-echo "   https://platform.moonshot.cn"
+echo "   https://platform.kimi.ai"
 echo ""
 echo "2. Edit .env and set:"
 echo "   - MOONSHOT_API_KEY (for Nanobot + OpenCode)"

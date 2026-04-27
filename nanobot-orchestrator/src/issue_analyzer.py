@@ -106,7 +106,7 @@ Author: {issue.get('user', 'Unknown')}
         if self.provider == "anthropic":
             return await self._call_anthropic(system_prompt, user_prompt)
         elif self.provider == "moonshot":
-            return await self._call_openai_compatible(system_prompt, user_prompt, "https://api.moonshot.cn/v1")
+            return await self._call_openai_compatible(system_prompt, user_prompt, "https://api.moonshot.ai/v1")
         elif self.provider == "deepseek":
             return await self._call_openai_compatible(system_prompt, user_prompt, "https://api.deepseek.com/v1")
         else:

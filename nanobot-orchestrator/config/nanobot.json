@@ -2,7 +2,7 @@
   "providers": {
     "moonshot": {
       "apiKey": "${MOONSHOT_API_KEY}",
-      "baseUrl": "https://api.moonshot.cn/v1"
+      "baseUrl": "https://api.moonshot.ai/v1"
     },
     "openrouter": {
       "apiKey": "${OPENROUTER_API_KEY}",
@@ -28,19 +28,19 @@
   "agents": {
     "defaults": {
       "provider": "${NANOBOT_LLM_PROVIDER:-moonshot}",
-      "model": "${NANOBOT_LLM_MODEL:-kimi}",
+      "model": "${NANOBOT_LLM_MODEL:-kimi-k2.6}",
       "temperature": 0.3,
       "max_tokens": 4096
     },
     "issue_analyzer": {
       "provider": "${NANOBOT_LLM_PROVIDER:-moonshot}",
-      "model": "${NANOBOT_LLM_MODEL:-kimi}",
+      "model": "${NANOBOT_LLM_MODEL:-kimi-k2.6}",
       "temperature": 0.2,
       "max_tokens": 2048
     },
     "code_reviewer": {
       "provider": "${NANOBOT_LLM_PROVIDER:-moonshot}",
-      "model": "${NANOBOT_LLM_MODEL:-kimi}",
+      "model": "${NANOBOT_LLM_MODEL:-kimi-k2.6}",
       "temperature": 0.1,
       "max_tokens": 4096
     }

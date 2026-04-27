@@ -24,7 +24,7 @@ class LLMClient:
         if self.provider == "anthropic":
             return await self._call_anthropic(system_prompt, user_prompt, temperature)
         elif self.provider == "moonshot":
-            return await self._call_openai_compatible(system_prompt, user_prompt, temperature, "https://api.moonshot.cn/v1")
+            return await self._call_openai_compatible(system_prompt, user_prompt, temperature, "https://api.moonshot.ai/v1")
         else:
             return await self._call_openai_compatible(system_prompt, user_prompt, temperature)
     

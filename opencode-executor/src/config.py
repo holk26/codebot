@@ -15,7 +15,7 @@ class Settings:
     # LLM - Default: Moonshot
     LLM_PROVIDER: str = os.getenv("OPENCODE_LLM_PROVIDER", "moonshot")
     LLM_API_KEY: str = os.getenv("OPENCODE_LLM_API_KEY", "")
-    LLM_MODEL: str = os.getenv("OPENCODE_LLM_MODEL", "kimi")
+    LLM_MODEL: str = os.getenv("OPENCODE_LLM_MODEL", "kimi-k2.6")
     
     # API
     API_PORT: int = int(os.getenv("OPENCODE_API_PORT", "8001"))
