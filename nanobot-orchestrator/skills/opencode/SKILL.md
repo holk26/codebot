@@ -27,7 +27,7 @@ This skill lets me (the AI agent) automatically fix GitHub issues by delegating 
 
 ### Step 1: Extract parameters
 From the user's message, extract:
-- `repo`: The repository in `owner/repo` format. If the user says "my repo" or omits it, ask for clarification.
+- `repo`: The repository in `owner/repo` format. If the user says "my repo" or omits the owner/repo, use the `GITHUB_REPO` environment variable as default. Only ask for clarification if `GITHUB_REPO` is also not set.
 - `issue_number`: The issue number (integer after `#` or just a number).
 - `issue_title`: A brief title for the issue (can be a short summary if not provided).
 - `issue_body`: The issue description (can be empty if not provided).

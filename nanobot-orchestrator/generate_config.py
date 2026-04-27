@@ -73,6 +73,18 @@ def main():
     
     gateway_port = int(get_env("NANOBOT_GATEWAY_PORT", "8081"))
     
+    github_repo = get_env("GITHUB_REPO", "")
+    
+    # System instructions for the nanobot agent
+    system_instructions = (
+        "You are Nanobot, the orchestrator agent of the Codebot system. "
+        "You automatically fix GitHub issues by analyzing them and delegating to the OpenCode executor. "
+        "You can: fix issues, check status, and show help. "
+        "Be concise and helpful. Never reveal API keys or secrets."
+    )
+    if github_repo:
+        system_instructions += f" The default monitored repository is {github_repo}."
+    
     # Minimal config that nanobot-ai accepts
     config = {
         "providers": providers,
@@ -81,7 +93,8 @@ def main():
                 "provider": provider,
                 "model": model,
                 "temperature": 0.3,
-                "max_tokens": 4096
+                "max_tokens": 4096,
+                "instructions": system_instructions
             }
         },
         "channels": {

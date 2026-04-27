@@ -18,6 +18,13 @@ mkdir -p "${HOME}/.nanobot/data" "${HOME}/.nanobot/logs" "${HOME}/.nanobot/skill
 # Generate nanobot config using Python
 python3 /app/generate_config.py
 
+# Copy project context (AGENTS.md) to nanobot workspace
+if [ -f "/app/AGENTS.md" ]; then
+    echo "[entrypoint] Copying project context..."
+    cp /app/AGENTS.md "${HOME}/.nanobot/AGENTS.md"
+    echo "[entrypoint] AGENTS.md copied to ${HOME}/.nanobot/"
+fi
+
 # Copy custom skills to nanobot workspace
 if [ -d "/app/skills" ]; then
     echo "[entrypoint] Copying custom skills..."
