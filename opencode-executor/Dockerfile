@@ -1,7 +1,7 @@
 # ============================================
 # OPENCODE EXECUTOR - Native OpenCode Server
 # ============================================
-# Runs the official opencode-ai CLI in serve mode.
+# Runs the official opencode-ai CLI in web mode.
 # No custom FastAPI wrapper - uses native opencode REST API.
 # ============================================
 
