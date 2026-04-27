@@ -29,12 +29,12 @@ echo "[2/6] Generating cryptographically secure secrets..."
 INTERNAL_API_KEY=$(openssl rand -hex 32)
 REDIS_PASSWORD=$(openssl rand -hex 24)
 GITHUB_WEBHOOK_SECRET=$(openssl rand -hex 32)
-OPENCODE_WEB_PASSWORD=$(openssl rand -hex 16)
+OPENCODE_SERVER_PASSWORD=$(openssl rand -hex 24)
 
 echo "  INTERNAL_API_KEY: generated (64 hex chars)"
 echo "  REDIS_PASSWORD: generated (48 hex chars)"
 echo "  GITHUB_WEBHOOK_SECRET: generated (64 hex chars)"
-echo "  OPENCODE_WEB_PASSWORD: generated (32 hex chars)"
+echo "  OPENCODE_SERVER_PASSWORD: generated (48 hex chars)"
 
 # Create .env file
 echo ""
@@ -79,16 +79,17 @@ MISTRAL_API_KEY=
 # ============================================
 # OPENCODE EXECUTOR LLM (Default: Moonshot)
 # ============================================
+# The native opencode-ai CLI is used as the executor.
 OPENCODE_LLM_PROVIDER=moonshot
 OPENCODE_LLM_API_KEY=sk-REPLACE_ME
-OPENCODE_LLM_MODEL=kimi-k2.6
+OPENCODE_LLM_MODEL=moonshotai/kimi-k2.6
 
 # ============================================
-# OPENCODE WEB ACCESS (Basic Auth)
+# OPENCODE SERVER AUTH (Basic Auth)
 # ============================================
-# Generated automatically. Change if you want.
-OPENCODE_WEB_USER=admin
-OPENCODE_WEB_PASSWORD=${OPENCODE_WEB_PASSWORD}
+# The native opencode serve uses HTTP Basic Auth.
+OPENCODE_SERVER_USERNAME=opencode
+OPENCODE_SERVER_PASSWORD=${OPENCODE_SERVER_PASSWORD}
 
 # ============================================
 # TELEGRAM INTEGRATION
@@ -111,8 +112,6 @@ SLACK_CHANNEL=
 # ============================================
 WEBHOOK_PORT=8080
 WEBHOOK_HOST=0.0.0.0
-OPENCODE_API_PORT=8001
-OPENCODE_API_HOST=0.0.0.0
 WORKSPACE_DIR=/workspace
 ALLOWED_ACTIONS=opened,reopened,edited
 SKIP_LABEL=agent-skip
@@ -160,14 +159,14 @@ echo ""
 echo "5. Configure GitHub webhook:"
 echo "   https://YOUR_DOMAIN/webhook/github"
 echo ""
-echo "6. Access OpenCode Executor (optional):"
-echo "   https://YOUR_OPCODE_DOMAIN/status"
-echo "   User: admin"
-echo "   Password: (see OPENCODE_WEB_PASSWORD in .env)"
+echo "6. Access OpenCode Web UI (optional):"
+echo "   https://YOUR_OPCODE_DOMAIN"
+echo "   User: opencode"
+echo "   Password: (see OPENCODE_SERVER_PASSWORD in .env)"
 echo ""
 echo "IMPORTANT:"
 echo "  - Keep .env file secure (chmod 600)"
 echo "  - Never commit .env to git"
 echo "  - The webhook secret in GitHub MUST match GITHUB_WEBHOOK_SECRET"
-echo "  - OpenCode is now exposed to internet with Basic Auth protection"
+echo "  - OpenCode uses native HTTP Basic Auth for security"
 echo ""

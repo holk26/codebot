@@ -113,11 +113,11 @@ services:
       start_period: 10s
 
   # ============================================
-  # OPENCODE EXECUTOR (Web-exposed with Basic Auth)
+  # OPENCODE EXECUTOR (Native OpenCode Server)
   # ============================================
-  # Can be exposed to the internet via Dokploy.
-  # Protected by HTTP Basic Auth (OPENCODE_WEB_PASSWORD).
-  # The /health endpoint remains open for load balancers.
+  # Runs the official opencode-ai CLI in headless serve mode.
+  # Exposes the native OpenCode REST API.
+  # Protected by HTTP Basic Auth (OPENCODE_SERVER_PASSWORD).
   # ============================================
   opencode-executor:
     build:
@@ -136,7 +136,6 @@ services:
       - SETGID
       - SETUID
       - DAC_OVERRIDE
-    # NOTE: read_only disabled because it writes to /workspace and /tmp at runtime.
     tmpfs:
       - /tmp:noexec,nosuid,size=200m
     ports:
@@ -144,10 +143,10 @@ services:
     env_file:
       - .env
     environment:
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
-      - WORKSPACE_DIR=/workspace
-      - API_PORT=8001
-      - API_HOST=0.0.0.0
+      - OPENCODE_LLM_API_KEY=${OPENCODE_LLM_API_KEY}
+      - OPENCODE_LLM_MODEL=${OPENCODE_LLM_MODEL:-moonshotai/kimi-k2.6}
+      - OPENCODE_SERVER_PASSWORD=${OPENCODE_SERVER_PASSWORD}
+      - OPENCODE_SERVER_USERNAME=${OPENCODE_SERVER_USERNAME:-opencode}
     volumes:
       - workspace_data:/workspace
     depends_on:
@@ -157,11 +156,11 @@ services:
       - public
       - internal
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      test: ["CMD-SHELL", "curl -fsS -u \"opencode:${OPENCODE_SERVER_PASSWORD}\" http://localhost:8001/global/health || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 3
-      start_period: 10s
+      start_period: 15s
 
 volumes:
   workspace_data:

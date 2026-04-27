@@ -32,23 +32,18 @@ From the user's message, extract:
 - `issue_title`: A brief title for the issue (can be a short summary if not provided).
 - `issue_body`: The issue description (can be empty if not provided).
 
-### Step 2: Call the OpenCode executor
+### Step 2: Call the orchestrator API
 Use the `exec` tool to run curl:
 
 ```bash
-curl -s -X POST http://opencode-executor:8001/execute \
+curl -s -X POST http://localhost:8080/api/fix-issue \
   -H "Content-Type: application/json" \
   -H "X-Internal-API-Key: $INTERNAL_API_KEY" \
   -d '{
     "repo": "OWNER/REPO",
     "issue_number": N,
     "issue_title": "TITLE",
-    "issue_body": "BODY",
-    "analysis": {
-      "summary": "Fix requested by user via chat",
-      "requires_code_changes": true
-    },
-    "task_type": "fix_issue"
+    "issue_body": "BODY"
   }'
 ```
 
@@ -60,10 +55,10 @@ Replace:
 
 ### Step 3: Interpret the response
 The response is a JSON object. Tell the user:
-- If `success` is true: "I've created a fix! Pull Request: <pr_url>"
-- If `success` is false: "I couldn't create the fix automatically. Error: <error>"
+- If `status` is "accepted": "I've started fixing the issue! I'll create a pull request shortly."
+- If there's an error: "I couldn't start the fix automatically. Error: <error>"
 
 ## Important notes
-- The OpenCode executor runs in the internal Docker network at `http://opencode-executor:8001`.
+- The orchestrator runs the fix workflow asynchronously.
 - The `INTERNAL_API_KEY` environment variable is pre-configured and passed automatically.
 - Do not show the API key to the user.

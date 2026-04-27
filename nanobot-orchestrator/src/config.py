@@ -29,8 +29,11 @@ class Settings:
     LLM_API_KEY: str = os.getenv("OPENCODE_LLM_API_KEY", "")
     LLM_MODEL: str = os.getenv("OPENCODE_LLM_MODEL", "kimi")
     
-    # OpenCode Executor
+    # OpenCode Executor (native opencode serve)
     OPCODE_API_URL: str = os.getenv("OPCODE_API_URL", "http://opencode-executor:8001")
+    OPENCODE_SERVER_USERNAME: str = os.getenv("OPENCODE_SERVER_USERNAME", "opencode")
+    OPENCODE_SERVER_PASSWORD: str = os.getenv("OPENCODE_SERVER_PASSWORD", "")
+    OPENCODE_LLM_MODEL: str = os.getenv("OPENCODE_LLM_MODEL", "moonshotai/kimi-k2.6")
     
     # Internal Service Auth
     INTERNAL_API_KEY: str = os.getenv("INTERNAL_API_KEY", "")

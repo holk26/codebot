@@ -3,12 +3,12 @@
 ## Project Overview
 This project implements a dual-agent AI system for automated GitHub issue resolution:
 - **Nanobot Orchestrator**: Receives webhooks, analyzes issues, delegates to executor
-- **OpenCode Executor**: Executes code changes, creates PRs
+- **OpenCode Executor**: Runs the native `opencode-ai` CLI in headless server mode
 
 ## Architecture
 - Docker Compose orchestrates 3 services: `redis`, `nanobot-orchestrator`, `opencode-executor`
 - **2 isolated networks**: `public` (internet-facing via Dokploy), `internal` (service-to-service + Redis)
-- Communication: HTTPS via Dokploy for webhooks, HTTP+API Key via internal network
+- Communication: HTTPS via Dokploy for webhooks, HTTP+Basic Auth via internal network to opencode server
 - Shared volume: `/workspace` for repository code
 - Redis: Password-protected, internal network only
 
@@ -30,11 +30,10 @@ This project implements a dual-agent AI system for automated GitHub issue resolu
 | `shared/middleware.py` | FastAPI security headers + audit logging |
 | `nanobot-orchestrator/src/webhook_server.py` | GitHub webhook receiver with HMAC validation |
 | `nanobot-orchestrator/src/issue_analyzer.py` | LLM-based issue analysis |
-| `nanobot-orchestrator/src/opencode_client.py` | Authenticated client to OpenCode |
-| `opencode-executor/src/executor.py` | Main execution engine |
-| `opencode-executor/src/tools.py` | Safe tool implementations |
-| `opencode-executor/src/git_utils.py` | Git operations |
-| `opencode-executor/src/api.py` | API routes requiring internal API key |
+| `nanobot-orchestrator/src/opencode_client.py` | Client for native opencode REST API |
+| `nanobot-orchestrator/src/git_manager.py` | Git operations (clone, branch, commit, push, PR) |
+| `opencode-executor/Dockerfile` | Installs `opencode-ai` npm package |
+| `opencode-executor/entrypoint.sh` | Configures auth and runs `opencode serve` |
 
 ## Build & Run
 ```bash
@@ -53,9 +52,10 @@ docker compose logs -f  # View logs
 
 ## Security Model
 - **Webhook validation**: HMAC-SHA256 mandatory
-- **Service auth**: `X-Internal-API-Key` header required between services
-- **Network isolation**: OpenCode is on `internal` network only, never exposed
-- **Container hardening**: Non-root, read-only fs, dropped capabilities, no-new-privileges
+- **Service auth**: `X-Internal-API-Key` header between nanobot services
+- **OpenCode auth**: HTTP Basic Auth (`OPENCODE_SERVER_PASSWORD`) on opencode server
+- **Network isolation**: OpenCode is on `internal` network only, never exposed directly
+- **Container hardening**: Non-root, dropped capabilities, no-new-privileges
 - **SSL**: Automatic via Dokploy (Let's Encrypt)
 - **Rate limiting**: 30 req/min per IP (application-level)
 - **Audit logging**: All requests logged with IP, method, path, status, duration
@@ -63,16 +63,13 @@ docker compose logs -f  # View logs
 ## LLM Configuration
 Supported providers: moonshot, openrouter, openai, anthropic, deepseek, google, mistral
 Configure via `.env` variables:
-- `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL`
+- `NANOBOT_LLM_PROVIDER`, `NANOBOT_LLM_MODEL`
 - `OPENCODE_LLM_PROVIDER`, `OPENCODE_LLM_API_KEY`, `OPENCODE_LLM_MODEL`
 
 ## Security Notes
 - Webhook signatures are verified via HMAC-SHA256 (mandatory, no bypass)
-- Bash commands are sandboxed to `/workspace`
-- Dangerous commands are blocked in `tools.py`
-- Max tool calls: 50 per task
-- Max execution time: 600 seconds per task
-- OpenCode executor rejects all requests without valid `INTERNAL_API_KEY`
+- OpenCode executor uses native `opencode serve` with HTTP Basic Auth
+- Max execution time: 600 seconds per task (opencode default)
 - FastAPI docs (`/docs`, `/redoc`, `/openapi.json`) are disabled in production
 - `.env` must have `chmod 600` and never be committed
 

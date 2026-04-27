@@ -42,12 +42,17 @@ else
     echo "  Nanobot Orchestrator: NOT READY (may need more time)"
 fi
 
-# Check opencode
+# Check opencode (native server uses /global/health with basic auth)
 echo "Checking opencode executor..."
-if curl -sk http://localhost:8001/health &> /dev/null; then
-    echo "  OpenCode Executor: OK (http://localhost:8001)"
+OPENCODE_PASS=$(grep "^OPENCODE_SERVER_PASSWORD=" .env 2>/dev/null | cut -d= -f2 || echo "")
+if [ -n "$OPENCODE_PASS" ]; then
+    if curl -sk -u "opencode:$OPENCODE_PASS" http://localhost:8001/global/health &> /dev/null; then
+        echo "  OpenCode Executor: OK (http://localhost:8001)"
+    else
+        echo "  OpenCode Executor: NOT READY (may need more time)"
+    fi
 else
-    echo "  OpenCode Executor: NOT READY (may need more time)"
+    echo "  OpenCode Executor: SKIP (no password configured)"
 fi
 
 echo ""

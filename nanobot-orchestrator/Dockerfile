@@ -24,12 +24,10 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy requirements
 COPY nanobot-orchestrator/requirements.txt /tmp/nanobot-req.txt
-COPY opencode-executor/requirements.txt /tmp/opencode-req.txt
 
 # Install nanobot-ai from PyPI + orchestrator dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r /tmp/nanobot-req.txt && \
-    pip install --no-cache-dir -r /tmp/opencode-req.txt
+    pip install --no-cache-dir -r /tmp/nanobot-req.txt
 
 
 # --- Production stage ---
