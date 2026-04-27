@@ -24,6 +24,10 @@ class Settings:
     # Internal Service Auth
     INTERNAL_API_KEY: str = os.getenv("INTERNAL_API_KEY", "")
     
+    # Web Basic Auth (for exposing to internet)
+    OPENCODE_WEB_USER: str = os.getenv("OPENCODE_WEB_USER", "admin")
+    OPENCODE_WEB_PASSWORD: str = os.getenv("OPENCODE_WEB_PASSWORD", "")
+    
     # GitHub
     GITHUB_TOKEN: str = os.getenv("GITHUB_TOKEN", "")
     

@@ -11,7 +11,8 @@ version: "3.8"
 # You only need to:
 #   1. Deploy this compose file in Dokploy
 #   2. Set the domain for nanobot-orchestrator in Dokploy UI
-#   3. Configure GitHub webhook to the Dokploy domain
+#   3. (Optional) Set the domain for opencode-executor in Dokploy UI
+#   4. Configure GitHub webhook to the Dokploy domain
 # ============================================
 
 services:
@@ -55,8 +56,8 @@ services:
   # ============================================
   # NANOBOT ORCHESTRATOR (Public-facing)
   # ============================================
-  # This is the ONLY service exposed to the internet.
-  # Dokploy will handle SSL and domain routing automatically.
+  # Exposed to the internet via Dokploy.
+  # Handles GitHub webhooks and delegates to OpenCode.
   # ============================================
   nanobot-orchestrator:
     build:
@@ -75,9 +76,8 @@ services:
       - SETGID
       - SETUID
       - DAC_OVERRIDE
-    # NOTE: read_only disabled for nanobot-orchestrator
-    # because nanobot-ai needs to write memory, logs, and config at runtime.
-    # Security is maintained via non-root user, dropped capabilities, and no-new-privileges.
+    # NOTE: read_only disabled because nanobot-ai writes memory/logs/config at runtime.
+    # Security maintained via non-root user, dropped capabilities, no-new-privileges.
     tmpfs:
       - /tmp:noexec,nosuid,size=100m
     ports:
@@ -111,11 +111,11 @@ services:
       start_period: 10s
 
   # ============================================
-  # OPENCODE EXECUTOR (Internal ONLY)
+  # OPENCODE EXECUTOR (Web-exposed with Basic Auth)
   # ============================================
-  # CRITICAL: This service is NEVER exposed to the internet.
-  # It only accepts connections from nanobot-orchestrator
-  # via the internal network.
+  # Can be exposed to the internet via Dokploy.
+  # Protected by HTTP Basic Auth (OPENCODE_WEB_PASSWORD).
+  # The /health endpoint remains open for load balancers.
   # ============================================
   opencode-executor:
     build:
@@ -134,9 +134,11 @@ services:
       - SETGID
       - SETUID
       - DAC_OVERRIDE
-    read_only: true
+    # NOTE: read_only disabled because it writes to /workspace and /tmp at runtime.
     tmpfs:
       - /tmp:noexec,nosuid,size=200m
+    ports:
+      - "8001:8001"
     env_file:
       - .env
     environment:
@@ -150,8 +152,8 @@ services:
       redis:
         condition: service_healthy
     networks:
+      - public
       - internal
-    # NO ports exposed - internal network only
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
       interval: 15s

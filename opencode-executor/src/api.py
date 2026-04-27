@@ -1,4 +1,4 @@
-"""API routes for OpenCode executor (Hardened)."""
+"""API routes for OpenCode executor (Hardened + Web Auth)."""
 import logging
 from typing import Dict, Any
 
@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from src.executor import TaskExecutor
 from src.config import settings
-from shared.security import require_internal_api_key, rate_limiter, rate_limit_key
+from shared.security import require_internal_api_key, require_web_auth, rate_limiter, rate_limit_key
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -34,11 +34,13 @@ class ExecuteResponse(BaseModel):
 
 @router.get("/health")
 async def health_check():
+    """Health check endpoint - always open for Dokploy/load balancers."""
     return {"status": "ok", "service": "opencode-executor"}
 
 
 @router.get("/status")
-async def get_status():
+async def get_status(_=Depends(require_web_auth)):
+    """Get executor status. Requires Basic Auth when exposed to internet."""
     return {
         "service": "opencode-executor",
         "workspace": settings.WORKSPACE_DIR,
@@ -47,8 +49,17 @@ async def get_status():
 
 
 @router.post("/execute", response_model=ExecuteResponse)
-async def execute_task(request: ExecuteRequest, _=Depends(require_internal_api_key)):
-    """Execute a code task delegated by Nanobot. Requires internal API key."""
+async def execute_task(
+    request: ExecuteRequest,
+    _web=Depends(require_web_auth),
+    _api=Depends(require_internal_api_key)
+):
+    """Execute a code task delegated by Nanobot.
+    
+    Requires BOTH:
+    - Basic Auth (web browser access)
+    - Internal API Key (service-to-service auth)
+    """
     logger.info(f"Received execution request for issue #{request.issue_number}")
     
     try:

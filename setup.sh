@@ -13,7 +13,7 @@ echo "============================================"
 
 # Check dependencies
 echo ""
-echo "[1/5] Checking dependencies..."
+echo "[1/6] Checking dependencies..."
 
 if ! command -v openssl &> /dev/null; then
     echo "ERROR: openssl is required for secret generation."
@@ -24,19 +24,21 @@ echo "  OpenSSL: OK"
 
 # Generate secrets
 echo ""
-echo "[2/5] Generating cryptographically secure secrets..."
+echo "[2/6] Generating cryptographically secure secrets..."
 
 INTERNAL_API_KEY=$(openssl rand -hex 32)
 REDIS_PASSWORD=$(openssl rand -hex 24)
 GITHUB_WEBHOOK_SECRET=$(openssl rand -hex 32)
+OPENCODE_WEB_PASSWORD=$(openssl rand -hex 16)
 
 echo "  INTERNAL_API_KEY: generated (64 hex chars)"
 echo "  REDIS_PASSWORD: generated (48 hex chars)"
 echo "  GITHUB_WEBHOOK_SECRET: generated (64 hex chars)"
+echo "  OPENCODE_WEB_PASSWORD: generated (32 hex chars)"
 
 # Create .env file
 echo ""
-echo "[3/5] Creating environment configuration..."
+echo "[3/6] Creating environment configuration..."
 
 if [ -f .env ]; then
     echo "  WARNING: .env already exists. Creating backup: .env.backup.$(date +%s)"
@@ -82,6 +84,13 @@ OPENCODE_LLM_API_KEY=sk-REPLACE_ME
 OPENCODE_LLM_MODEL=kimi-k2.6
 
 # ============================================
+# OPENCODE WEB ACCESS (Basic Auth)
+# ============================================
+# Generated automatically. Change if you want.
+OPENCODE_WEB_USER=admin
+OPENCODE_WEB_PASSWORD=${OPENCODE_WEB_PASSWORD}
+
+# ============================================
 # TELEGRAM INTEGRATION
 # ============================================
 TELEGRAM_BOT_TOKEN=
@@ -110,13 +119,13 @@ EOF
 
 # Set restrictive permissions on .env
 echo ""
-echo "[4/5] Setting secure file permissions..."
+echo "[4/6] Setting secure file permissions..."
 chmod 600 .env
 echo "  .env permissions set to 600 (owner read/write only)"
 
 # Create workspace directory
 echo ""
-echo "[5/5] Creating workspace directory..."
+echo "[5/6] Creating workspace directory..."
 mkdir -p workspace
 echo "  workspace/ created"
 
@@ -141,15 +150,21 @@ echo "4. Deploy to Dokploy:"
 echo "   - Upload code to Git repository"
 echo "   - In Dokploy: Create Service -> Compose -> Select repo"
 echo "   - Add environment variables from .env"
-echo "   - Set domain for nanobot-orchestrator service"
+echo "   - Set domain for nanobot-orchestrator service (webhooks)"
+echo "   - (Optional) Set domain for opencode-executor service (web UI)"
 echo "   - Deploy"
 echo ""
 echo "5. Configure GitHub webhook:"
 echo "   https://YOUR_DOMAIN/webhook/github"
 echo ""
+echo "6. Access OpenCode Executor (optional):"
+echo "   https://YOUR_OPCODE_DOMAIN/status"
+echo "   User: admin"
+echo "   Password: (see OPENCODE_WEB_PASSWORD in .env)"
+echo ""
 echo "IMPORTANT:"
 echo "  - Keep .env file secure (chmod 600)"
 echo "  - Never commit .env to git"
 echo "  - The webhook secret in GitHub MUST match GITHUB_WEBHOOK_SECRET"
-echo "  - opencode-executor is NOT exposed to the internet"
+echo "  - OpenCode is now exposed to internet with Basic Auth protection"
 echo ""

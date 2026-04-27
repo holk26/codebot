@@ -1,5 +1,6 @@
-"""OpenCode Executor - Main Entry Point (Hardened)
+"""OpenCode Executor - Main Entry Point (Hardened + Web Auth)
 Service that executes code changes controlled by Nanobot.
+Can be exposed to the internet via Dokploy with Basic Auth protection.
 """
 from contextlib import asynccontextmanager
 
@@ -20,12 +21,23 @@ async def lifespan(app: FastAPI):
         raise RuntimeError("INTERNAL_API_KEY must be configured. Exiting.")
     if not settings.GITHUB_TOKEN:
         raise RuntimeError("GITHUB_TOKEN must be configured. Exiting.")
+    
+    # Warn if web password is not set (user wants to expose to internet)
+    if not settings.OPENCODE_WEB_PASSWORD:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(
+            "OPENCODE_WEB_PASSWORD is not set. "
+            "Web-exposed endpoints (/status, /execute) will be inaccessible from browsers. "
+            "Set OPENCODE_WEB_PASSWORD in .env to enable web access."
+        )
+    
     yield
 
 
 app = FastAPI(
     title="OpenCode Executor",
-    description="Code execution service for AI agents",
+    description="Code execution service for AI agents. Protected by Basic Auth when exposed to internet.",
     version="1.0.0",
     docs_url=None,      # Disable docs in production
     redoc_url=None,
@@ -37,7 +49,7 @@ app = FastAPI(
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(AuditLogMiddleware)
 
-# CORS - no external origins allowed (internal service only)
+# CORS - restrict to nothing by default
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[],
