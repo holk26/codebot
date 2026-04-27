@@ -46,5 +46,5 @@ EOF
 echo "[entrypoint] Starting opencode serve on 0.0.0.0:8001"
 echo "[entrypoint] Model: ${OPENCODE_LLM_MODEL:-moonshotai/kimi-k2.6}"
 
-# Start opencode serve
-exec opencode serve --hostname 0.0.0.0 --port 8001 --dir /workspace
+# Start opencode serve (WORKDIR /workspace sets the project directory)
+exec opencode serve --hostname 0.0.0.0 --port 8001

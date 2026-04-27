@@ -95,7 +95,7 @@ services:
       - NANOBOT_GATEWAY_PORT=8081
     volumes:
       - workspace_data:/workspace
-      - nanobot_data:/home/appuser/.nanobot
+      - nanobot_data_v2:/home/appuser/.nanobot
       - ./nanobot-orchestrator/config:/app/config:ro
     depends_on:
       redis:
@@ -167,7 +167,7 @@ volumes:
     driver: local
   redis_data:
     driver: local
-  nanobot_data:
+  nanobot_data_v2:
     driver: local
 
 networks:
