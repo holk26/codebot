@@ -49,7 +49,7 @@
     "telegram": {
       "enabled": true,
       "token": "${TELEGRAM_BOT_TOKEN}",
-      "allowed_users": [],
+      "allowed_users": ["${TELEGRAM_ALLOWED_USER_IDS}"],
       "notify_on_issue": true,
       "notify_on_pr": true
     },
