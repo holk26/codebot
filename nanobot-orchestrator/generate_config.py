@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Generate nanobot config.json from environment variables."""
+"""Generate nanobot config.json from environment variables.
+Only includes keys that nanobot-ai's Config model accepts.
+"""
 import json
 import os
 from pathlib import Path
@@ -63,14 +65,10 @@ def main():
     discord_token = get_env("DISCORD_BOT_TOKEN")
     slack_token = get_env("SLACK_BOT_TOKEN")
     
-    github_token = get_env("GITHUB_TOKEN")
-    github_repo = get_env("GITHUB_REPO")
-    webhook_secret = get_env("GITHUB_WEBHOOK_SECRET")
-    
-    log_level = get_env("LOG_LEVEL", "INFO")
-    
     gateway_port = int(get_env("NANOBOT_GATEWAY_PORT", "8081"))
     
+    # Minimal config that nanobot-ai accepts
+    # Reference: https://github.com/HKUDS/nanobot/blob/main/nanobot/config/loader.py
     config = {
         "providers": providers,
         "agents": {
@@ -79,85 +77,27 @@ def main():
                 "model": model,
                 "temperature": 0.3,
                 "max_tokens": 4096
-            },
-            "issue_analyzer": {
-                "provider": provider,
-                "model": model,
-                "temperature": 0.2,
-                "max_tokens": 2048
-            },
-            "code_reviewer": {
-                "provider": provider,
-                "model": model,
-                "temperature": 0.1,
-                "max_tokens": 4096
             }
         },
         "channels": {
             "telegram": {
                 "enabled": bool(telegram_token),
-                "token": telegram_token,
-                "allowed_users": [],
-                "notify_on_issue": True,
-                "notify_on_pr": True
+                "token": telegram_token
             },
             "discord": {
                 "enabled": bool(discord_token),
-                "token": discord_token,
-                "guild_id": get_env("DISCORD_GUILD_ID", "")
+                "token": discord_token
             },
             "slack": {
                 "enabled": bool(slack_token),
-                "token": slack_token,
-                "channel": get_env("SLACK_CHANNEL", "")
+                "token": slack_token
             },
             "websocket": {
                 "enabled": True,
-                "port": gateway_port,
-                "host": "0.0.0.0"
+                "port": gateway_port
             }
-        },
-        "memory": {
-            "enabled": True,
-            "type": "sqlite",
-            "path": str(CONFIG_DIR / "data" / "memory.db"),
-            "max_tokens": 8000,
-            "context_window": 128000
-        },
-        "skills": {
-            "enabled": ["shell", "file", "git", "web_search", "github"],
-            "disabled": [],
-            "custom_skills_path": str(CONFIG_DIR / "skills")
-        },
-        "sandbox": {
-            "enabled": True,
-            "allowed_paths": ["/workspace", str(CONFIG_DIR / "data")],
-            "blocked_commands": [
-                "rm -rf /",
-                "mkfs",
-                "dd",
-                "> /dev/sda",
-                "chmod -R 777 /"
-            ]
-        },
-        "logging": {
-            "level": log_level,
-            "file": str(CONFIG_DIR / "logs" / "nanobot.log"),
-            "max_size": "10MB",
-            "backup_count": 5
         }
     }
-    
-    # Add GitHub integration if token is available
-    if github_token:
-        config["github_integration"] = {
-            "enabled": True,
-            "token": github_token,
-            "webhook_secret": webhook_secret,
-            "auto_comment": True,
-            "auto_label": True,
-            "default_repo": github_repo
-        }
     
     with open(CONFIG_FILE, "w") as f:
         json.dump(config, f, indent=2)
