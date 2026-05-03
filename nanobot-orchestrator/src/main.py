@@ -82,16 +82,27 @@ app.include_router(webhook_router, prefix="/webhook", tags=["webhooks"])
 app.include_router(dashboard_router)
 
 # Serve React dashboard static files
+# NOTE: StaticFiles mount must be AFTER API routes, or it will intercept everything
 static_dir = os.getenv("DASHBOARD_STATIC_DIR", "/app/static")
 if os.path.isdir(static_dir):
-    # Serve static files at root path - dashboard is the main UI
-    app.mount("/", StaticFiles(directory=static_dir, html=True), name="dashboard-static")
+    # Mount static files at /static for assets (JS, CSS, images)
+    app.mount("/assets", StaticFiles(directory=os.path.join(static_dir, "assets")), name="dashboard-assets")
+    app.mount("/static", StaticFiles(directory=static_dir), name="dashboard-static-files")
+
+    @app.get("/", include_in_schema=False)
+    async def serve_dashboard_index():
+        """Serve the dashboard index page at root."""
+        index_file = os.path.join(static_dir, "index.html")
+        if os.path.exists(index_file):
+            return FileResponse(index_file)
+        raise HTTPException(status_code=404, detail="Dashboard not built")
 
     @app.get("/{full_path:path}", include_in_schema=False)
     async def serve_dashboard_spa(full_path: str):
-        """Serve index.html for SPA routes."""
-        # Don't intercept API or webhook routes
-        if full_path.startswith(("api", "webhook", "health")):
+        """Serve index.html for SPA routes (client-side routing)."""
+        # Don't intercept API or webhook routes - let them 404 here
+        # so FastAPI can try the API routers above
+        if full_path.startswith(("api", "webhook", "health", "assets", "static")):
             raise HTTPException(status_code=404, detail="Not found")
         index_file = os.path.join(static_dir, "index.html")
         if os.path.exists(index_file):
