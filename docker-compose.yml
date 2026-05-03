@@ -93,6 +93,7 @@ services:
       - WEBHOOK_HOST=0.0.0.0
       - NANOBOT_CONFIG_PATH=/home/appuser/.nanobot/config.json
       - NANOBOT_GATEWAY_PORT=8081
+      - DASHBOARD_CORS_ORIGINS=${DASHBOARD_CORS_ORIGINS:-http://localhost:3000}
     volumes:
       - workspace_data:/workspace
       - nanobot_data_v2:/home/appuser/.nanobot
@@ -153,7 +154,6 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - public
       - internal
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS -u \"opencode:${OPENCODE_SERVER_PASSWORD}\" http://localhost:8001/global/health || exit 1"]

@@ -1,12 +1,24 @@
 # ============================================
 # NANOBOT ORCHESTRATOR - DOCKERFILE
-# Installs HKUDS/nanobot-ai and custom orchestrator
+# Installs HKUDS/nanobot-ai, builds React dashboard, and serves all from FastAPI
 # ============================================
 
 ARG APP_USER=appuser
 
-# --- Build stage ---
-FROM python:3.11-slim AS builder
+# --- Node build stage (Dashboard) ---
+FROM node:22-slim AS node-builder
+
+WORKDIR /build/app
+
+# Copy app source
+COPY app/package.json app/package-lock.json ./
+RUN npm ci
+
+COPY app/ ./
+RUN npm run build
+
+# --- Python build stage ---
+FROM python:3.11-slim AS py-builder
 
 WORKDIR /build
 
@@ -47,15 +59,14 @@ RUN groupadd -r ${APP_USER} && \
     useradd -r -g ${APP_USER} ${APP_USER}
 
 # Copy virtual environment from builder
-COPY --from=builder /opt/venv /opt/venv
+COPY --from=py-builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Set working directory
 WORKDIR /app
 
 # Create directories with proper ownership
-# /home/appuser/.nanobot is the runtime data directory (mounted as volume)
-RUN mkdir -p /app/src /app/config /app/data /app/logs /app/skills /workspace /tmp /home/${APP_USER}/.nanobot/data /home/${APP_USER}/.nanobot/logs && \
+RUN mkdir -p /app/src /app/config /app/data /app/logs /app/skills /app/static /workspace /tmp /home/${APP_USER}/.nanobot/data /home/${APP_USER}/.nanobot/logs && \
     chown -R ${APP_USER}:${APP_USER} /app /workspace /tmp /home/${APP_USER}
 
 # Copy application code
@@ -64,6 +75,9 @@ COPY --chown=${APP_USER}:${APP_USER} shared/ /app/shared/
 COPY --chown=${APP_USER}:${APP_USER} nanobot-orchestrator/generate_config.py /app/generate_config.py
 COPY --chown=${APP_USER}:${APP_USER} nanobot-orchestrator/skills/ /app/skills/
 COPY --chown=${APP_USER}:${APP_USER} nanobot-orchestrator/AGENTS.md /app/AGENTS.md
+
+# Copy built dashboard static files
+COPY --from=node-builder --chown=${APP_USER}:${APP_USER} /build/app/dist/ /app/static/
 
 # Copy entrypoint
 COPY --chown=${APP_USER}:${APP_USER} nanobot-orchestrator/entrypoint.sh /app/entrypoint.sh
@@ -78,6 +92,7 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV NANOBOT_CONFIG_PATH=/home/appuser/.nanobot/config.json
 ENV HOME=/home/appuser
+ENV DASHBOARD_STATIC_DIR=/app/static
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \

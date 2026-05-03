@@ -1,0 +1,27 @@
+/* NanoBot Console — Design System Variables */
+/* Imported by page files to make custom tokens available */
+
+:root {
+  --bg-primary: #0D1117;
+  --bg-secondary: #161B22;
+  --bg-tertiary: #21262D;
+  --bg-terminal: #0C0C0C;
+  --accent: #A78BFA;
+  --accent-hover: #8B5CF6;
+  --accent-glow: rgba(167, 139, 250, 0.15);
+  --terminal-green: #4ADE80;
+  --terminal-cyan: #22D3EE;
+  --terminal-amber: #FBBF24;
+  --terminal-red: #F87171;
+  --text-primary: #E6EDF3;
+  --text-secondary: #8B949E;
+  --text-tertiary: #484F58;
+  --border: #30363D;
+  --border-color: #30363D;
+  --border-active: #A78BFA;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}

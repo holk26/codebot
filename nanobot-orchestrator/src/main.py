@@ -9,7 +9,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 import uvicorn
 
 from src.config import settings
@@ -20,6 +21,7 @@ from src.github_client import GitHubClient
 from src.issue_analyzer import IssueAnalyzer
 from src.opencode_client import OpenCodeClient
 from src.git_manager import GitManager
+from src.dashboard import router as dashboard_router, install_dashboard_logging
 from shared.middleware import SecurityHeadersMiddleware, AuditLogMiddleware
 from shared.security import API_KEY_HEADER
 
@@ -28,6 +30,7 @@ logging.basicConfig(
     level=getattr(logging, settings.LOG_LEVEL),
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
+install_dashboard_logging()
 
 # Security audit logger
 audit_logger = logging.getLogger("security.audit")
@@ -65,16 +68,47 @@ app = FastAPI(
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(AuditLogMiddleware)
 
-# CORS - restrict to nothing by default (webhooks don't need CORS)
+# CORS - allow dashboard frontend (same origin in production, localhost for dev)
+origins = os.getenv("DASHBOARD_CORS_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[],
-    allow_credentials=False,
-    allow_methods=["POST", "GET"],
+    allow_origins=[o.strip() for o in origins if o.strip()],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
 app.include_router(webhook_router, prefix="/webhook", tags=["webhooks"])
+app.include_router(dashboard_router)
+
+# Serve React dashboard static files
+static_dir = os.getenv("DASHBOARD_STATIC_DIR", "/app/static")
+if os.path.isdir(static_dir):
+    app.mount("/dashboard", StaticFiles(directory=static_dir, html=True), name="dashboard-static")
+
+    @app.get("/")
+    async def serve_dashboard():
+        """Serve the dashboard at root."""
+        return FileResponse(os.path.join(static_dir, "index.html"))
+
+    @app.get("/{full_path:path}")
+    async def serve_spa_routes(full_path: str):
+        """Serve index.html for all non-API routes (SPA routing)."""
+        # Don't intercept API or webhook routes
+        if full_path.startswith(("api", "webhook", "health")):
+            raise HTTPException(status_code=404, detail="Not found")
+        index_file = os.path.join(static_dir, "index.html")
+        if os.path.exists(index_file):
+            return FileResponse(index_file)
+        raise HTTPException(status_code=404, detail="Dashboard not built")
+else:
+    @app.get("/")
+    async def root():
+        return {
+            "service": "nanobot-orchestrator",
+            "version": "1.0.0",
+            "description": "Orchestrates OpenCode executor to handle GitHub issues"
+        }
 
 
 def verify_internal_key(request: Request):
@@ -88,15 +122,6 @@ def verify_internal_key(request: Request):
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "service": "nanobot-orchestrator"}
-
-
-@app.get("/")
-async def root():
-    return {
-        "service": "nanobot-orchestrator",
-        "version": "1.0.0",
-        "description": "Orchestrates OpenCode executor to handle GitHub issues"
-    }
 
 
 @app.post("/api/fix-issue")
