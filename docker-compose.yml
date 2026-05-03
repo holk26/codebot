@@ -117,7 +117,8 @@ services:
   # OPENCODE EXECUTOR (Native OpenCode Server)
   # ============================================
   # Runs the official opencode-ai CLI in headless serve mode.
-  # Exposes the native OpenCode REST API.
+  # NOT exposed publicly - internal network only.
+  # Accessed by nanobot-orchestrator via internal Docker network.
   # Protected by HTTP Basic Auth (OPENCODE_SERVER_PASSWORD).
   # ============================================
   opencode-executor:
@@ -139,8 +140,8 @@ services:
       - DAC_OVERRIDE
     tmpfs:
       - /tmp:noexec,nosuid,size=200m
-    ports:
-      - "8001:8001"
+    # NO ports exposed - internal network only
+    # Nanobot accesses via: http://opencode-executor:8001
     env_file:
       - .env
     environment:
