@@ -31,12 +31,14 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Permissions policy
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
         
-        # Content security policy
+        # Content security policy - allow dashboard assets and Google Fonts
         response.headers["Content-Security-Policy"] = (
-            "default-src 'none'; "
-            "script-src 'none'; "
-            "style-src 'self'; "
-            "img-src 'self'; "
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com; "
+            "img-src 'self' data: blob:; "
             "connect-src 'self'; "
             "frame-ancestors 'none'; "
             "base-uri 'self'; "
