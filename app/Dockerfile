@@ -31,6 +31,12 @@ RUN echo 'server { \
         proxy_set_header Host $host; \
         proxy_set_header X-Real-IP $remote_addr; \
     } \
+    location /webhook/ { \
+        proxy_pass http://nanobot-orchestrator:8080/webhook/; \
+        proxy_http_version 1.1; \
+        proxy_set_header Host $host; \
+        proxy_set_header X-Real-IP $remote_addr; \
+    } \
     location /health { \
         proxy_pass http://nanobot-orchestrator:8080/health; \
     } \
