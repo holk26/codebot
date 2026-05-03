@@ -10,9 +10,9 @@ version: "3.8"
 #
 # You only need to:
 #   1. Deploy this compose file in Dokploy
-#   2. Set the domain for nanobot-orchestrator in Dokploy UI
-#   3. (Optional) Set the domain for opencode-executor in Dokploy UI
-#   4. Configure GitHub webhook to the Dokploy domain
+#   2. Set the domain for dashboard in Dokploy UI
+#   3. Set the domain for nanobot-orchestrator in Dokploy UI (optional, for API)
+#   4. Configure GitHub webhook to the nanobot domain
 # ============================================
 
 services:
@@ -54,10 +54,44 @@ services:
       start_period: 5s
 
   # ============================================
-  # NANOBOT ORCHESTRATOR (Public-facing)
+  # DASHBOARD (React frontend)
   # ============================================
-  # Exposed to the internet via Dokploy.
-  # Handles GitHub webhooks and delegates to OpenCode.
+  # Serves the React dashboard via nginx.
+  # Proxies /api and /health to nanobot-orchestrator.
+  # ============================================
+  dashboard:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: dashboard
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE
+    ports:
+      - "3000:80"
+    depends_on:
+      - nanobot-orchestrator
+    networks:
+      - public
+      - internal
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ============================================
+  # NANOBOT ORCHESTRATOR (API + Webhook)
+  # ============================================
+  # Handles GitHub webhooks and dashboard API.
+  # No static files - API only.
   # ============================================
   nanobot-orchestrator:
     build:
@@ -76,8 +110,6 @@ services:
       - SETGID
       - SETUID
       - DAC_OVERRIDE
-    # NOTE: read_only disabled because nanobot-ai writes memory/logs/config at runtime.
-    # Security maintained via non-root user, dropped capabilities, no-new-privileges.
     tmpfs:
       - /tmp:noexec,nosuid,size=100m
     ports:
@@ -114,12 +146,10 @@ services:
       start_period: 10s
 
   # ============================================
-  # OPENCODE EXECUTOR (Native OpenCode Server)
+  # OPENCODE EXECUTOR (Internal only)
   # ============================================
-  # Runs the official opencode-ai CLI in headless serve mode.
   # NOT exposed publicly - internal network only.
   # Accessed by nanobot-orchestrator via internal Docker network.
-  # Protected by HTTP Basic Auth (OPENCODE_SERVER_PASSWORD).
   # ============================================
   opencode-executor:
     build:
@@ -141,7 +171,6 @@ services:
     tmpfs:
       - /tmp:noexec,nosuid,size=200m
     # NO ports exposed - internal network only
-    # Nanobot accesses via: http://opencode-executor:8001
     env_file:
       - .env
     environment:
