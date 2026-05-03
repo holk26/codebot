@@ -84,19 +84,15 @@ app.include_router(dashboard_router)
 # Serve React dashboard static files
 static_dir = os.getenv("DASHBOARD_STATIC_DIR", "/app/static")
 if os.path.isdir(static_dir):
-    # Serve static files at /dashboard/ path
-    app.mount("/dashboard", StaticFiles(directory=static_dir, html=True), name="dashboard-static")
+    # Serve static files at root path - dashboard is the main UI
+    app.mount("/", StaticFiles(directory=static_dir, html=True), name="dashboard-static")
 
-    @app.get("/", include_in_schema=False)
-    async def redirect_to_dashboard():
-        """Redirect root to dashboard."""
-        from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/dashboard/")
-
-    @app.get("/dashboard/{full_path:path}", include_in_schema=False)
+    @app.get("/{full_path:path}", include_in_schema=False)
     async def serve_dashboard_spa(full_path: str):
-        """Serve index.html for SPA routes under /dashboard/."""
-        # API routes are handled by the router above, not here
+        """Serve index.html for SPA routes."""
+        # Don't intercept API or webhook routes
+        if full_path.startswith(("api", "webhook", "health")):
+            raise HTTPException(status_code=404, detail="Not found")
         index_file = os.path.join(static_dir, "index.html")
         if os.path.exists(index_file):
             return FileResponse(index_file)
