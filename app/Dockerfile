@@ -28,6 +28,6 @@ COPY --chown=appuser:appuser nginx.conf /etc/nginx/nginx.conf
 
 USER appuser
 
-EXPOSE 8080
+EXPOSE 3000
 
 CMD ["nginx", "-g", "daemon off;"]

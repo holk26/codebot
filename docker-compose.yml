@@ -74,14 +74,14 @@ services:
       - SETUID
       - DAC_OVERRIDE
     ports:
-      - "3000:8080"
+      - "3000:3000"
     depends_on:
       - nanobot-orchestrator
     networks:
       - public
       - internal
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
       interval: 15s
       timeout: 5s
       retries: 3
