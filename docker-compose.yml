@@ -56,10 +56,14 @@ services:
     build:
       context: ./app
       dockerfile: Dockerfile
+      args:
+        - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD:-changeme}
     container_name: dashboard
     restart: unless-stopped
     ports:
       - "3000:3000"
+    environment:
+      - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD:-changeme}
     depends_on:
       - nanobot-orchestrator
     networks:
