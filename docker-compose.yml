@@ -3,21 +3,16 @@ version: "3.8"
 # ============================================
 # GitHub AI Agent - Dokploy Optimized
 # ============================================
-# Dokploy handles:
-#   - Reverse proxy (Traefik internally)
-#   - SSL/TLS (Let's Encrypt automatically)
-#   - Domain routing
-#
-# You only need to:
-#   1. Deploy this compose file in Dokploy
-#   2. Set the domain for dashboard in Dokploy UI
-#   3. Set the domain for nanobot-orchestrator in Dokploy UI (optional, for API)
-#   4. Configure GitHub webhook to the nanobot domain
+# Services:
+#   - dashboard: React frontend (kx.app.moonsbow.com:3000)
+#   - nanobot-orchestrator: API + Webhook (nano.app.moonsbow.com:8080)
+#   - opencode-executor: Internal only (NO public domain)
+#   - redis: Internal only
 # ============================================
 
 services:
   # ============================================
-  # REDIS (Database - internal network)
+  # REDIS (Database - internal network only)
   # ============================================
   redis:
     image: redis:7-alpine
@@ -55,9 +50,7 @@ services:
 
   # ============================================
   # DASHBOARD (React frontend)
-  # ============================================
-  # Serves the React dashboard via nginx.
-  # Proxies /api and /health to nanobot-orchestrator.
+  # Public: kx.app.moonsbow.com:3000
   # ============================================
   dashboard:
     build:
@@ -89,9 +82,7 @@ services:
 
   # ============================================
   # NANOBOT ORCHESTRATOR (API + Webhook)
-  # ============================================
-  # Handles GitHub webhooks and dashboard API.
-  # No static files - API only.
+  # Public: nano.app.moonsbow.com:8080
   # ============================================
   nanobot-orchestrator:
     build:
@@ -147,9 +138,7 @@ services:
 
   # ============================================
   # OPENCODE EXECUTOR (Internal only)
-  # ============================================
-  # NOT exposed publicly - internal network only.
-  # Accessed by nanobot-orchestrator via internal Docker network.
+  # NO public domain - internal network only
   # ============================================
   opencode-executor:
     build:
@@ -170,7 +159,7 @@ services:
       - DAC_OVERRIDE
     tmpfs:
       - /tmp:noexec,nosuid,size=200m
-    # NO ports exposed - internal network only
+    # NO ports - internal network only
     env_file:
       - .env
     environment:
