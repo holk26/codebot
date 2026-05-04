@@ -14,19 +14,13 @@ RUN npm run build
 # Production stage - nginx (non-root)
 FROM nginx:alpine
 
-# Remove default nginx config
-RUN rm -f /etc/nginx/conf.d/default.conf
+# Remove default nginx config and create dirs
+RUN rm -rf /etc/nginx/conf.d /var/cache/nginx && \
+    mkdir -p /tmp/nginx/client_temp /tmp/nginx/proxy_temp /tmp/nginx/fastcgi_temp /tmp/nginx/uwsgi_temp /tmp/nginx/scgi_temp /var/log/nginx
 
-# Create non-root user and fix permissions
-RUN adduser -D -u 1000 appuser && \
-    mkdir -p /tmp/nginx/client_temp /tmp/nginx/proxy_temp /tmp/nginx/fastcgi_temp /tmp/nginx/uwsgi_temp /tmp/nginx/scgi_temp && \
-    chown -R appuser:appuser /tmp/nginx /usr/share/nginx/html /var/log/nginx /run /etc/nginx/conf.d
-
-# Copy built app
+# Copy built app and custom nginx config
 COPY --from=builder /build/dist /usr/share/nginx/html
-COPY --chown=appuser:appuser nginx.conf /etc/nginx/nginx.conf
-
-USER appuser
+COPY nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 3000
 
